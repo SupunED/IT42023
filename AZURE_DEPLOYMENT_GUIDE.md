@@ -10,7 +10,7 @@ This guide describes how to deploy the **BookNest E-Commerce Platform** on Micro
 graph TD
     Client[End User Browser / Mobile] -->|HTTPS Traffic| VM[Azure VM: OWASP ModSecurity WAF]
     VM -->|Filtered Secure Traffic| AppService[Azure App Service: Linux Web App / Node.js]
-    AppService -->|SQL Query Connection| DB[(Azure Database Flexible Server: PostgreSQL / MySQL)]
+    AppService -->|SQL Query Connection| DB[(Azure Database for MySQL Flexible Server)]
     AppService -->|Blob Upload / Retrieval| Storage[(Azure Blob Storage: booknest-media)]
     AppService -->|Transactional Email API| ACS[Azure Email Communication Services]
     AppService -->|OAuth 2.0 Token Verification| Google[Google OAuth 2.0 API]
@@ -19,7 +19,7 @@ graph TD
 ### Infrastructure Components
 1. **Azure VM with OWASP ModSecurity WAF**: Reverse proxy inspecting all incoming web traffic against SQL injection, XSS, and botnets.
 2. **Azure App Service**: Production-grade Linux Web App hosting the Node.js / React build.
-3. **Azure Database Flexible Server**: Managed relational database (PostgreSQL or MySQL) with automated backups and SSL encryption.
+3. **Azure Database for MySQL Flexible Server**: Managed MySQL database with automated backups and SSL encryption.
 4. **Azure Blob Storage**: Cloud asset repository for book covers, invoices, and user avatars.
 5. **Azure Communication Services (Email)**: High-deliverability transactional email service for order receipts and overdue lending notifications.
 
@@ -32,10 +32,10 @@ graph TD
 az group create --name rg-booknest-prod --location eastus
 ```
 
-### Step 2: Provision Azure Database Flexible Server (PostgreSQL or MySQL)
+### Step 2: Provision Azure Database for MySQL Flexible Server
 ```bash
-# PostgreSQL Flexible Server
-az postgres flexible-server create \
+# MySQL Flexible Server
+az mysql flexible-server create \
   --resource-group rg-booknest-prod \
   --name booknest-db-server \
   --location eastus \
@@ -44,7 +44,7 @@ az postgres flexible-server create \
   --sku-name Standard_B1ms \
   --tier Burstable \
   --storage-size 32 \
-  --version 15
+  --version 8.0.21
 ```
 
 ### Step 3: Create Azure Storage Account & Blob Container
@@ -102,12 +102,11 @@ In the Azure Portal (or via CLI), configure the following App Settings under **C
 ```bash
 az webapp config appsettings set --resource-group rg-booknest-prod --name booknest-app --settings \
   NODE_ENV=production \
-  DB_DIALECT=postgres \
-  DB_HOST=booknest-db-server.postgres.database.azure.com \
+  DB_HOST=booknest-db-server.mysql.database.azure.com \
   DB_NAME=booknest_db \
   DB_USER=booknest_admin \
   DB_PASSWORD=YourStrongPassword123! \
-  DB_PORT=5432 \
+  DB_PORT=3306 \
   DB_SSL=true \
   JWT_SECRET=super_secure_production_jwt_secret_2026 \
   AZURE_STORAGE_CONNECTION_STRING="$CONNECTION_STRING" \

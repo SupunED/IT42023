@@ -43,7 +43,7 @@ app.get('/api/health', (req, res) => {
     status: 'online',
     platform: 'BookNest E-Commerce Platform',
     timestamp: new Date().toISOString(),
-    database: process.env.DB_DIALECT || 'sqlite'
+    database: 'mysql'
   });
 });
 
@@ -71,8 +71,8 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('✅ Database connected successfully.');
 
-    // Auto sync schema
-    await sequelize.sync({ alter: true });
+    // Sync models (schema is imported via SQL; this only creates missing tables)
+    await sequelize.sync();
 
     // Seed if database is empty
     const userCount = await User.count();

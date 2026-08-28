@@ -8,7 +8,13 @@
     "dev": "nodemon src/app.js",
     "seed": "node src/seeders/seed.js"
   },
-  "keywords": ["ecommerce", "bookstore", "lending", "azure", "express"],
+  "keywords": [
+    "ecommerce",
+    "bookstore",
+    "lending",
+    "azure",
+    "express"
+  ],
   "author": "BookNest Team",
   "license": "ISC",
   "dependencies": {
@@ -26,10 +32,7 @@
     "mysql2": "^3.9.3",
     "node-cron": "^3.0.3",
     "nodemailer": "^6.9.13",
-    "pg": "^8.11.5",
-    "pg-hstore": "^2.3.4",
     "sequelize": "^6.37.2",
-    "sqlite3": "^5.1.7",
     "uuid": "^9.0.1"
   },
   "devDependencies": {
