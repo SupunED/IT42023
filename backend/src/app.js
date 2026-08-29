@@ -55,6 +55,15 @@ app.use('/api/orders', orderRoutes);
 app.use('/api/lending', lendingRoutes);
 app.use('/api/admin', adminRoutes);
 
+// Serve the built React frontend (combined hosting)
+const frontendDist = path.join(__dirname, '../../frontend/dist');
+app.use(express.static(frontendDist));
+
+// SPA fallback: send index.html for any non-API route
+app.get(/^(?!\/api|\/uploads).*/, (req, res) => {
+  res.sendFile(path.join(frontendDist, 'index.html'));
+});
+
 // Global Error Handler
 app.use((err, req, res, next) => {
   console.error('Unhandled server error:', err);
