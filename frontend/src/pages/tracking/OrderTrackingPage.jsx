@@ -13,6 +13,7 @@ import {
   FileText
 } from 'lucide-react';
 import api from '../../services/api';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const ORDER_STAGES = ['Reviewing', 'Processing', 'Ready', 'In Progress', 'Delivered'];
 
@@ -61,20 +62,23 @@ const OrderTrackingPage = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '40px 24px 80px', maxWidth: '960px' }}>
-      {/* Header */}
-      <div style={{ textAlign: 'center', marginBottom: '36px' }}>
-        <div style={{ width: '54px', height: '54px', borderRadius: '16px', background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
-          <Package size={28} />
+    <>
+      {/* Page Header band */}
+      <div style={{ background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', padding: '40px 0' }}>
+        <div className="container" style={{ textAlign: 'center' }}>
+          <div style={{ width: '54px', height: '54px', borderRadius: '12px', background: '#ffffff', border: '1px solid var(--border)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px' }}>
+            <Package size={28} />
+          </div>
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px', letterSpacing: '-0.5px' }}>
+            Track Your Delivery
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '520px', margin: '0 auto' }}>
+            Enter your Order ID below to view live delivery progression, courier notes, and parcel milestones.
+          </p>
         </div>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-          Track Your Delivery
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '15px', maxWidth: '520px', margin: '0 auto' }}>
-          Enter your Order ID below to view live delivery progression, courier notes, and parcel milestones.
-        </p>
       </div>
 
+      <div className="container" style={{ padding: '40px 24px 80px', maxWidth: '960px' }}>
       {/* Search Box Card */}
       <div className="card" style={{ padding: '28px', marginBottom: '36px' }}>
         <form onSubmit={handleTrackSubmit}>
@@ -120,7 +124,7 @@ const OrderTrackingPage = () => {
           <div className="flex items-center justify-between" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '20px', marginBottom: '28px', flexWrap: 'wrap', gap: 12 }}>
             <div>
               <span style={{ fontSize: '12px', color: '#64748b', textTransform: 'uppercase', fontWeight: 600 }}>Tracking details for</span>
-              <h2 style={{ fontSize: '22px', fontWeight: 800, color: '#4f46e5', margin: '2px 0 0 0' }}>{order.orderID}</h2>
+              <h2 style={{ fontSize: '22px', fontWeight: 700, color: 'var(--text-main)', margin: '2px 0 0 0' }}>{order.orderID}</h2>
             </div>
             <div className="flex items-center gap-3">
               <span className="badge badge-primary" style={{ fontSize: '14px', padding: '6px 14px' }}>
@@ -144,7 +148,7 @@ const OrderTrackingPage = () => {
                         width: '36px',
                         height: '36px',
                         borderRadius: '50%',
-                        background: isPassed ? '#4f46e5' : '#e2e8f0',
+                        background: isPassed ? 'var(--primary)' : 'var(--border)',
                         color: isPassed ? '#ffffff' : '#94a3b8',
                         display: 'flex',
                         alignItems: 'center',
@@ -179,7 +183,7 @@ const OrderTrackingPage = () => {
             <div>
               <h4 style={{ fontSize: '13px', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>Delivery Address</h4>
               <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                <MapPin size={16} style={{ color: '#4f46e5', marginTop: 2, flexShrink: 0 }} />
+                <MapPin size={16} style={{ color: 'var(--text-main)', marginTop: 2, flexShrink: 0 }} />
                 {order.deliveryAddress}
               </p>
             </div>
@@ -201,8 +205,9 @@ const OrderTrackingPage = () => {
               {order.items?.map((item) => (
                 <div key={item.itemID} style={{ display: 'flex', alignItems: 'center', gap: 14, padding: '12px', background: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '10px' }}>
                   <img
-                    src={item.book?.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                    src={item.book?.coverPhotoUrl || FALLBACK_BOOK_COVER}
                     alt={item.book?.title}
+                    onError={handleCoverError}
                     style={{ width: '48px', height: '64px', objectFit: 'cover', borderRadius: '6px' }}
                   />
                   <div style={{ flex: 1 }}>
@@ -211,7 +216,7 @@ const OrderTrackingPage = () => {
                   </div>
                   <div style={{ textAlign: 'right' }}>
                     <span style={{ fontSize: '13px', color: '#64748b' }}>Qty: {item.quantity}</span>
-                    <strong style={{ display: 'block', fontSize: '14px', color: '#4f46e5' }}>${Number(item.totalPrice).toFixed(2)}</strong>
+                    <strong style={{ display: 'block', fontSize: '14px', color: 'var(--text-main)' }}>${Number(item.totalPrice).toFixed(2)}</strong>
                   </div>
                 </div>
               ))}
@@ -219,7 +224,8 @@ const OrderTrackingPage = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

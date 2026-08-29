@@ -4,11 +4,9 @@ import {
   ArrowRight,
   BookOpen,
   Sparkles,
-  ShieldCheck,
   Truck,
   RotateCcw,
   Clock,
-  CheckCircle2,
   TrendingUp,
   Cpu,
   Brain,
@@ -50,13 +48,14 @@ const HomePage = () => {
   };
 
   const getCategoryIcon = (iconName) => {
+    const color = 'var(--text-main)';
     switch (iconName) {
-      case 'Cpu': return <Cpu size={22} style={{ color: '#6366f1' }} />;
-      case 'Sparkles': return <Sparkles size={22} style={{ color: '#ec4899' }} />;
-      case 'TrendingUp': return <TrendingUp size={22} style={{ color: '#10b981' }} />;
-      case 'Brain': return <Brain size={22} style={{ color: '#f59e0b' }} />;
-      case 'GraduationCap': return <GraduationCap size={22} style={{ color: '#3b82f6' }} />;
-      default: return <BookOpen size={22} style={{ color: '#4f46e5' }} />;
+      case 'Cpu': return <Cpu size={22} style={{ color }} />;
+      case 'Sparkles': return <Sparkles size={22} style={{ color }} />;
+      case 'TrendingUp': return <TrendingUp size={22} style={{ color }} />;
+      case 'Brain': return <Brain size={22} style={{ color }} />;
+      case 'GraduationCap': return <GraduationCap size={22} style={{ color }} />;
+      default: return <BookOpen size={22} style={{ color }} />;
     }
   };
 
@@ -65,29 +64,19 @@ const HomePage = () => {
       {/* 1. Hero Section */}
       <section
         style={{
-          background: 'linear-gradient(135deg, #0f172a 0%, #1e1b4b 60%, #312e81 100%)',
-          color: '#ffffff',
-          padding: '80px 0 90px',
-          position: 'relative',
-          overflow: 'hidden'
+          background: 'var(--primary-light)',
+          borderBottom: '1px solid var(--border)',
+          padding: '80px 0'
         }}
       >
-        {/* Ambient Glows */}
-        <div style={{ position: 'absolute', top: '-10%', left: '10%', width: '350px', height: '350px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.25)', filter: 'blur(90px)', pointerEvents: 'none' }} />
-        <div style={{ position: 'absolute', bottom: '-10%', right: '5%', width: '400px', height: '400px', borderRadius: '50%', background: 'rgba(236, 72, 153, 0.2)', filter: 'blur(100px)', pointerEvents: 'none' }} />
-
-        <div className="container" style={{ position: 'relative', zIndex: 1 }}>
-          <div style={{ maxWidth: '780px', margin: '0 auto', textAlign: 'center' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: 'rgba(255, 255, 255, 0.12)', backdropFilter: 'blur(8px)', border: '1px solid rgba(255, 255, 255, 0.2)', padding: '6px 16px', borderRadius: '30px', fontSize: '13px', fontWeight: 600, color: '#fbcfe8', marginBottom: '24px' }}>
-              <Sparkles size={16} style={{ color: '#f472b6' }} /> The Unified Digital Bookstore & Lending Hub
-            </div>
-
-            <h1 style={{ fontSize: '48px', fontWeight: 800, lineHeight: 1.15, color: '#ffffff', marginBottom: '20px', letterSpacing: '-1px' }}>
-              Discover, Read, Buy & <span style={{ background: 'linear-gradient(90deg, #818cf8, #f472b6)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Borrow Books</span> Seamlessly
+        <div className="container">
+          <div style={{ maxWidth: '720px', margin: '0 auto', textAlign: 'center' }}>
+            <h1 style={{ fontSize: '44px', fontWeight: 700, lineHeight: 1.15, color: 'var(--text-main)', marginBottom: '18px', letterSpacing: '-1px' }}>
+              Buy and borrow books, simply.
             </h1>
 
-            <p style={{ fontSize: '18px', color: '#cbd5e1', lineHeight: 1.6, marginBottom: '36px', maxWidth: '640px', margin: '0 auto 36px' }}>
-              Explore thousands of bestselling titles across software engineering, fiction, science, and business. Purchase to keep or lend for flexible 14 to 30-day periods.
+            <p style={{ fontSize: '17px', color: 'var(--text-muted)', lineHeight: 1.6, maxWidth: '560px', margin: '0 auto 32px' }}>
+              Thousands of titles across technology, fiction, science and business. Purchase to keep, or borrow for 14 to 30 days.
             </p>
 
             {/* Hero Search Box */}
@@ -95,99 +84,75 @@ const HomePage = () => {
               onSubmit={handleHeroSearch}
               style={{
                 background: '#ffffff',
-                padding: '8px',
-                borderRadius: '50px',
-                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.3)',
+                padding: '6px',
+                borderRadius: '10px',
+                border: '1px solid var(--border)',
                 display: 'flex',
                 alignItems: 'center',
-                maxWidth: '560px',
-                margin: '0 auto 32px'
+                maxWidth: '520px',
+                margin: '0 auto'
               }}
             >
               <input
                 type="text"
-                placeholder="Search by title, author, or topic (e.g., Clean Code, Dune)..."
+                placeholder="Search by title, author, or topic..."
                 value={searchKey}
                 onChange={(e) => setSearchKey(e.target.value)}
                 style={{
                   flex: 1,
                   border: 'none',
                   outline: 'none',
-                  padding: '12px 20px',
+                  padding: '10px 14px',
                   fontSize: '15px',
-                  borderRadius: '30px',
-                  color: '#0f172a'
+                  color: 'var(--text-main)',
+                  background: 'transparent'
                 }}
               />
-              <button type="submit" className="btn btn-primary" style={{ borderRadius: '30px', padding: '12px 24px' }}>
+              <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px' }}>
                 Search <ArrowRight size={16} />
               </button>
             </form>
-
-            {/* Value Props Bar */}
-            <div style={{ display: 'flex', justifyContent: 'center', gap: '28px', flexWrap: 'wrap', fontSize: '13px', color: '#94a3b8' }}>
-              <span className="flex items-center gap-2"><CheckCircle2 size={16} style={{ color: '#10b981' }} /> Flexible Book Lending</span>
-              <span className="flex items-center gap-2"><CheckCircle2 size={16} style={{ color: '#10b981' }} /> Real-Time Order Tracking</span>
-              <span className="flex items-center gap-2"><CheckCircle2 size={16} style={{ color: '#10b981' }} /> Google OAuth 2.0 Security</span>
-            </div>
           </div>
         </div>
       </section>
 
       {/* 2. Key Features Bar */}
-      <section style={{ background: '#ffffff', borderBottom: '1px solid #e2e8f0', padding: '24px 0' }}>
+      <section style={{ background: '#ffffff', borderBottom: '1px solid var(--border)', padding: '32px 0' }}>
         <div className="container">
-          <div className="grid grid-cols-4 lg-grid-cols-2 md-grid-cols-1 gap-6">
-            <div className="flex items-center gap-4">
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#eef2ff', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#4f46e5' }}>
-                <Truck size={24} />
+          <div className="grid grid-cols-3 md-grid-cols-1" style={{ gap: 0 }}>
+            {[
+              { Icon: Truck, title: 'Free Delivery', text: 'On all orders over $50' },
+              { Icon: Clock, title: 'Lending Library', text: 'Borrow books for 14 to 30 days' },
+              { Icon: RotateCcw, title: 'Easy Returns', text: 'Simple returns and drop-off' }
+            ].map(({ Icon, title, text }, i) => (
+              <div
+                key={title}
+                className="flex items-center gap-4 feature-cell"
+                style={{
+                  padding: '4px 28px',
+                  borderLeft: i === 0 ? 'none' : '1px solid var(--border)'
+                }}
+              >
+                <div style={{ width: '44px', height: '44px', flexShrink: 0, borderRadius: '8px', background: 'var(--primary-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-main)' }}>
+                  <Icon size={22} />
+                </div>
+                <div>
+                  <h4 style={{ fontSize: '14px', fontWeight: 600, color: 'var(--text-main)' }}>{title}</h4>
+                  <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>{text}</p>
+                </div>
               </div>
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Express Delivery</h4>
-                <p style={{ fontSize: '12px', color: '#64748b' }}>Free shipping on all orders over $50</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#d97706' }}>
-                <Clock size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Book Lending Library</h4>
-                <p style={{ fontSize: '12px', color: '#64748b' }}>Borrow books for 14 to 30 days easily</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#ecfdf5', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#10b981' }}>
-                <RotateCcw size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Easy Returns</h4>
-                <p style={{ fontSize: '12px', color: '#64748b' }}>Hassle-free return and lending drop-off</p>
-              </div>
-            </div>
-
-            <div className="flex items-center gap-4">
-              <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f1f5f9', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0f172a' }}>
-                <ShieldCheck size={24} />
-              </div>
-              <div>
-                <h4 style={{ fontSize: '14px', fontWeight: 700 }}>Azure WAF Protected</h4>
-                <p style={{ fontSize: '12px', color: '#64748b' }}>OWASP-compliant secure transactions</p>
-              </div>
-            </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* 3. Browse Categories */}
-      <section style={{ padding: '60px 0' }}>
+      <section style={{ padding: '72px 0', background: 'var(--bg-main)' }}>
         <div className="container">
-          <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: '#4f46e5', letterSpacing: '1px' }}>EXPLORE BY GENRE</span>
-              <h2 style={{ fontSize: '28px', fontWeight: 800 }}>Popular Book Categories</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.3px' }}>Browse Categories</h2>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>Find your next read by subject.</p>
             </div>
             <Link to="/catalogue" className="btn btn-outline btn-sm">
               View All <ArrowRight size={14} />
@@ -201,24 +166,24 @@ const HomePage = () => {
                 to={`/catalogue?category=${cat.slug}`}
                 style={{
                   background: '#ffffff',
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '16px',
-                  padding: '24px',
+                  border: '1px solid var(--border)',
+                  borderRadius: '10px',
+                  padding: '22px',
                   display: 'flex',
                   alignItems: 'flex-start',
                   gap: '16px',
-                  transition: 'all 0.25s ease'
+                  transition: 'all 0.2s ease'
                 }}
                 className="card"
               >
-                <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#f8fafc', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                <div style={{ width: '44px', height: '44px', borderRadius: '8px', background: 'var(--bg-main)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   {getCategoryIcon(cat.icon)}
                 </div>
                 <div>
-                  <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#0f172a', marginBottom: '4px' }}>{cat.name}</h3>
-                  <p style={{ fontSize: '13px', color: '#64748b', marginBottom: '10px' }}>{cat.description}</p>
-                  <span style={{ fontSize: '12px', fontWeight: 600, color: '#4f46e5' }}>
-                    {cat.bookCount || 0} Titles Available →
+                  <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '4px' }}>{cat.name}</h3>
+                  <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: '10px' }}>{cat.description}</p>
+                  <span style={{ fontSize: '12px', fontWeight: 500, color: 'var(--accent)' }}>
+                    {cat.bookCount || 0} titles →
                   </span>
                 </div>
               </Link>
@@ -228,12 +193,12 @@ const HomePage = () => {
       </section>
 
       {/* 4. Featured Bestsellers */}
-      <section style={{ padding: '40px 0 80px', background: '#ffffff', borderTop: '1px solid #e2e8f0' }}>
+      <section style={{ padding: '72px 0', background: '#ffffff', borderTop: '1px solid var(--border)' }}>
         <div className="container">
-          <div className="flex items-center justify-between" style={{ marginBottom: '32px' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '28px', paddingBottom: '20px', borderBottom: '1px solid var(--border)' }}>
             <div>
-              <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: '#f59e0b', letterSpacing: '1px' }}>CURATED SELECTION</span>
-              <h2 style={{ fontSize: '28px', fontWeight: 800 }}>Featured Bestsellers & Top Picks</h2>
+              <h2 style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.3px' }}>Featured Books</h2>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', marginTop: '4px' }}>Hand-picked titles available to buy or borrow.</p>
             </div>
             <Link to="/catalogue" className="btn btn-primary btn-sm">
               Explore All Books <ArrowRight size={14} />
@@ -253,46 +218,29 @@ const HomePage = () => {
       </section>
 
       {/* 5. How Book Lending Works Banner */}
-      <section style={{ background: 'linear-gradient(135deg, #1e1b4b, #312e81)', color: '#ffffff', padding: '70px 0' }}>
+      <section style={{ background: 'var(--primary-light)', borderTop: '1px solid var(--border)', padding: '72px 0' }}>
         <div className="container">
-          <div style={{ textAlign: 'center', maxWidth: '600px', margin: '0 auto 48px' }}>
-            <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: '#f472b6', letterSpacing: '1px' }}>SMART BORROWING</span>
-            <h2 style={{ fontSize: '32px', fontWeight: 800, color: '#ffffff', marginTop: '6px' }}>How Book Lending Works</h2>
-            <p style={{ color: '#cbd5e1', fontSize: '15px', marginTop: '8px' }}>
-              Want to read without committing to buying? Rent books directly to your doorstep in 3 simple steps.
+          <div style={{ textAlign: 'center', maxWidth: '560px', margin: '0 auto 40px' }}>
+            <h2 style={{ fontSize: '24px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '-0.3px' }}>How Lending Works</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: '15px', marginTop: '8px' }}>
+              Borrow books in three simple steps.
             </p>
           </div>
 
-          <div className="grid grid-cols-3 md-grid-cols-1 gap-8">
-            <div style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '30px', border: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'center' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#4f46e5', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '20px', fontWeight: 800 }}>
-                1
+          <div className="grid grid-cols-3 md-grid-cols-1 gap-6">
+            {[
+              { n: 1, title: 'Choose Duration', text: 'Pick a book and a rental period of 14, 21, or 30 days, then submit your request.' },
+              { n: 2, title: 'Get Approved', text: 'An admin reviews your request and you receive a confirmation email with the due date.' },
+              { n: 3, title: 'Read & Return', text: 'Track due dates from your profile and start a return in a single click.' }
+            ].map((step) => (
+              <div key={step.n} style={{ background: '#ffffff', borderRadius: '10px', padding: '26px', border: '1px solid var(--border)' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'var(--primary)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: '16px', fontSize: '14px', fontWeight: 600 }}>
+                  {step.n}
+                </div>
+                <h3 style={{ fontSize: '16px', fontWeight: 600, color: 'var(--text-main)', marginBottom: '8px' }}>{step.title}</h3>
+                <p style={{ fontSize: '14px', color: 'var(--text-muted)', lineHeight: 1.6 }}>{step.text}</p>
               </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>Choose Duration</h3>
-              <p style={{ fontSize: '14px', color: '#cbd5e1' }}>
-                Select your book and pick a flexible rental period (14, 21, or 30 days). Review the small rental fee and submit your request.
-              </p>
-            </div>
-
-            <div style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '30px', border: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'center' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#f59e0b', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '20px', fontWeight: 800 }}>
-                2
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>Instant Approval</h3>
-              <p style={{ fontSize: '14px', color: '#cbd5e1' }}>
-                The library admin reviews and approves your request. You'll receive an automated confirmation email with your calculated due date.
-              </p>
-            </div>
-
-            <div style={{ background: 'rgba(255, 255, 255, 0.08)', borderRadius: '16px', padding: '30px', border: '1px solid rgba(255, 255, 255, 0.15)', textAlign: 'center' }}>
-              <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: '#10b981', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 20px', fontSize: '20px', fontWeight: 800 }}>
-                3
-              </div>
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#ffffff', marginBottom: '8px' }}>Read & Return</h3>
-              <p style={{ fontSize: '14px', color: '#cbd5e1' }}>
-                Enjoy your reading! Track due dates from your profile dashboard and initiate returns in a single click when finished.
-              </p>
-            </div>
+            ))}
           </div>
         </div>
       </section>

@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const ProfilePage = () => {
   const { user, updateUserProfile, quickDemoLogin } = useAuth();
@@ -120,41 +121,44 @@ const ProfilePage = () => {
   }
 
   return (
-    <div className="container" style={{ padding: '40px 24px 80px' }}>
-      {/* Header Profile Summary */}
-      <div className="card" style={{ padding: '28px', marginBottom: '32px', background: 'linear-gradient(135deg, #ffffff 0%, #f8fafc 100%)' }}>
-        <div className="flex items-center justify-between flex-wrap gap-4">
+    <>
+      {/* Page Header band */}
+      <div style={{ background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', padding: '32px 0' }}>
+        <div className="container flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
             <img
               src={user.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
               alt={user.name}
-              style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '3px solid #4f46e5' }}
+              style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff' }}
             />
             <div>
-              <h1 style={{ fontSize: '24px', fontWeight: 800, margin: 0 }}>{user.name}</h1>
-              <p style={{ fontSize: '14px', color: '#64748b', margin: '2px 0 0 0' }}>{user.email}</p>
+              <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0, letterSpacing: '-0.5px' }}>{user.name}</h1>
+              <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{user.email}</p>
               <span className="badge badge-primary" style={{ marginTop: '6px' }}>
                 {user.role === 'admin' ? 'System Administrator' : 'BookNest Member'}
               </span>
             </div>
           </div>
 
-          <div style={{ display: 'flex', gap: 12 }}>
+          <div style={{ display: 'flex', gap: 8 }}>
             <button
               onClick={() => setSearchParams({ tab: 'profile' })}
               className={`btn btn-sm ${activeTab === 'profile' ? 'btn-primary' : 'btn-outline'}`}
+              style={activeTab !== 'profile' ? { background: '#ffffff' } : undefined}
             >
               <UserIcon size={14} /> Profile Settings
             </button>
             <button
               onClick={() => setSearchParams({ tab: 'orders' })}
               className={`btn btn-sm ${activeTab === 'orders' ? 'btn-primary' : 'btn-outline'}`}
+              style={activeTab !== 'orders' ? { background: '#ffffff' } : undefined}
             >
               <Package size={14} /> My Orders
             </button>
             <button
               onClick={() => setSearchParams({ tab: 'lendings' })}
               className={`btn btn-sm ${activeTab === 'lendings' ? 'btn-primary' : 'btn-outline'}`}
+              style={activeTab !== 'lendings' ? { background: '#ffffff' } : undefined}
             >
               <Clock size={14} /> Borrowed Books
             </button>
@@ -162,6 +166,7 @@ const ProfilePage = () => {
         </div>
       </div>
 
+      <div className="container" style={{ padding: '40px 24px 80px' }}>
       {/* TAB 1: Profile Information */}
       {activeTab === 'profile' && (
         <div className="card" style={{ maxWidth: '640px', margin: '0 auto', padding: '32px' }}>
@@ -247,7 +252,7 @@ const ProfilePage = () => {
                   <div className="flex items-center justify-between flex-wrap gap-4" style={{ borderBottom: '1px solid #f1f5f9', paddingBottom: '16px', marginBottom: '16px' }}>
                     <div>
                       <span style={{ fontSize: '12px', color: '#64748b' }}>Placed on {new Date(ord.createdAt).toLocaleDateString()}</span>
-                      <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#4f46e5', margin: '2px 0 0 0' }}>{ord.orderID}</h4>
+                      <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', margin: '2px 0 0 0' }}>{ord.orderID}</h4>
                     </div>
 
                     <div className="flex items-center gap-3">
@@ -264,8 +269,9 @@ const ProfilePage = () => {
                     {ord.items?.map((item) => (
                       <div key={item.itemID} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                         <img
-                          src={item.book?.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                          src={item.book?.coverPhotoUrl || FALLBACK_BOOK_COVER}
                           alt={item.book?.title}
+                          onError={handleCoverError}
                           style={{ width: '36px', height: '48px', objectFit: 'cover', borderRadius: '4px' }}
                         />
                         <div style={{ flex: 1 }}>
@@ -302,12 +308,13 @@ const ProfilePage = () => {
               {lendings.map((lend) => {
                 const isOverdue = lend.status === 'Overdue' || (lend.dueDate && new Date(lend.dueDate) < new Date() && lend.status === 'Active');
                 return (
-                  <div key={lend.lendID} className="card" style={{ padding: '24px', borderLeft: `4px solid ${isOverdue ? '#ef4444' : '#4f46e5'}` }}>
+                  <div key={lend.lendID} className="card" style={{ padding: '24px', borderLeft: `4px solid ${isOverdue ? 'var(--danger)' : 'var(--primary)'}` }}>
                     <div className="flex items-center justify-between flex-wrap gap-4">
                       <div className="flex items-center gap-4">
                         <img
-                          src={lend.book?.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                          src={lend.book?.coverPhotoUrl || FALLBACK_BOOK_COVER}
                           alt={lend.book?.title}
+                          onError={handleCoverError}
                           style={{ width: '50px', height: '70px', objectFit: 'cover', borderRadius: '6px' }}
                         />
                         <div>
@@ -316,7 +323,7 @@ const ProfilePage = () => {
                           <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: '6px', fontSize: '12px', color: '#475569' }}>
                             <span>Borrowed: {new Date(lend.startDate).toLocaleDateString()}</span>
                             <span>•</span>
-                            <span style={{ color: isOverdue ? '#ef4444' : '#4f46e5', fontWeight: 700 }}>
+                            <span style={{ color: isOverdue ? 'var(--danger)' : 'var(--text-main)', fontWeight: 700 }}>
                               Due: {lend.dueDate ? new Date(lend.dueDate).toLocaleDateString() : 'N/A'}
                             </span>
                           </div>
@@ -333,7 +340,6 @@ const ProfilePage = () => {
                             onClick={() => handleReturnBook(lend.lendID)}
                             disabled={returningId === lend.lendID}
                             className="btn btn-outline btn-sm"
-                            style={{ borderColor: '#10b981', color: '#059669' }}
                           >
                             <RotateCcw size={14} /> {returningId === lend.lendID ? 'Processing...' : 'Return Book'}
                           </button>
@@ -347,7 +353,8 @@ const ProfilePage = () => {
           )}
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

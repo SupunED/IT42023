@@ -72,7 +72,7 @@ const OrderSuccessPage = () => {
           <span style={{ fontSize: '12px', fontWeight: 700, textTransform: 'uppercase', color: '#64748b', display: 'block', marginBottom: '4px' }}>
             YOUR UNIQUE ORDER TRACKING ID
           </span>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#4f46e5', letterSpacing: '1px' }}>
+          <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)', letterSpacing: '1px' }}>
             {orderID}
           </span>
           <p style={{ fontSize: '13px', color: '#64748b', margin: '8px 0 0 0' }}>
@@ -91,9 +91,9 @@ const OrderSuccessPage = () => {
           </Link>
         </div>
 
-        <div style={{ marginTop: '40px', borderTop: '1px solid #f1f5f9', paddingTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '12px', color: '#94a3b8' }}>
-          <ShieldCheck size={16} style={{ color: '#10b981' }} />
-          Verified Secure Checkout on Azure Cloud Infrastructure
+        <div style={{ marginTop: '40px', borderTop: '1px solid var(--border-light)', paddingTop: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, fontSize: '12px', color: 'var(--text-light)' }}>
+          <ShieldCheck size={16} style={{ color: 'var(--text-muted)' }} />
+          Secure checkout
         </div>
       </div>
     </div>

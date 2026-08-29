@@ -111,24 +111,27 @@ const CataloguePage = () => {
   };
 
   return (
-    <div className="container" style={{ padding: '40px 24px 80px' }}>
-      {/* Page Header */}
-      <div style={{ marginBottom: '32px' }}>
-        <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', marginBottom: '8px' }}>
-          Explore Book Catalogue
-        </h1>
-        <p style={{ color: '#64748b', fontSize: '15px' }}>
-          Showing {totalCount} books available for purchase and lending
-        </p>
+    <>
+      {/* Page Header band — visually detaches the page from the sticky navbar */}
+      <div style={{ background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', padding: '36px 0' }}>
+        <div className="container">
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px', letterSpacing: '-0.5px' }}>
+            Explore Book Catalogue
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '14px' }}>
+            Showing {totalCount} books available for purchase and lending
+          </p>
+        </div>
       </div>
 
+      <div className="container" style={{ padding: '40px 24px 80px' }}>
       <div className="grid grid-cols-4 md-grid-cols-1 gap-8">
         {/* Left Sidebar: Filters */}
         <div style={{ gridColumn: 'span 1' }}>
           <div className="card" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
             <div className="flex items-center justify-between" style={{ marginBottom: '20px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
               <h3 style={{ fontSize: '16px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8 }}>
-                <SlidersHorizontal size={18} style={{ color: '#4f46e5' }} /> Filters
+                <SlidersHorizontal size={18} style={{ color: 'var(--text-main)' }} /> Filters
               </h3>
               <button
                 onClick={handleResetFilters}
@@ -150,9 +153,9 @@ const CataloguePage = () => {
                     padding: '8px 12px',
                     borderRadius: '8px',
                     border: 'none',
-                    background: selectedCategory === 'all' ? '#eef2ff' : 'transparent',
-                    color: selectedCategory === 'all' ? '#4f46e5' : '#334155',
-                    fontWeight: selectedCategory === 'all' ? 700 : 500,
+                    background: selectedCategory === 'all' ? 'var(--primary-light)' : 'transparent',
+                    color: selectedCategory === 'all' ? 'var(--text-main)' : 'var(--text-muted)',
+                    fontWeight: selectedCategory === 'all' ? 600 : 500,
                     fontSize: '13px',
                     cursor: 'pointer'
                   }}
@@ -169,9 +172,9 @@ const CataloguePage = () => {
                       padding: '8px 12px',
                       borderRadius: '8px',
                       border: 'none',
-                      background: selectedCategory === cat.slug ? '#eef2ff' : 'transparent',
-                      color: selectedCategory === cat.slug ? '#4f46e5' : '#334155',
-                      fontWeight: selectedCategory === cat.slug ? 700 : 500,
+                      background: selectedCategory === cat.slug ? 'var(--primary-light)' : 'transparent',
+                      color: selectedCategory === cat.slug ? 'var(--text-main)' : 'var(--text-muted)',
+                      fontWeight: selectedCategory === cat.slug ? 600 : 500,
                       fontSize: '13px',
                       cursor: 'pointer',
                       display: 'flex',
@@ -190,7 +193,7 @@ const CataloguePage = () => {
             <div style={{ marginBottom: '24px' }}>
               <div className="flex items-center justify-between" style={{ marginBottom: '8px' }}>
                 <label className="label" style={{ margin: 0 }}>Max Price</label>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#4f46e5' }}>${maxPrice}</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)' }}>${maxPrice}</span>
               </div>
               <input
                 type="range"
@@ -199,7 +202,7 @@ const CataloguePage = () => {
                 step="5"
                 value={maxPrice}
                 onChange={(e) => setMaxPrice(parseInt(e.target.value))}
-                style={{ width: '100%', accentColor: '#4f46e5', cursor: 'pointer' }}
+                style={{ width: '100%', accentColor: 'var(--primary)', cursor: 'pointer' }}
               />
             </div>
 
@@ -214,7 +217,7 @@ const CataloguePage = () => {
                     setCurrentPage(1);
                     updateUrlFilters({ inStock: e.target.checked, page: 1 });
                   }}
-                  style={{ accentColor: '#4f46e5', width: '16px', height: '16px' }}
+                  style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
                 />
                 In Stock Only
               </label>
@@ -228,7 +231,7 @@ const CataloguePage = () => {
                     setCurrentPage(1);
                     updateUrlFilters({ lendable: e.target.checked, page: 1 });
                   }}
-                  style={{ accentColor: '#f59e0b', width: '16px', height: '16px' }}
+                  style={{ accentColor: 'var(--primary)', width: '16px', height: '16px' }}
                 />
                 Available for Lending
               </label>
@@ -278,14 +281,14 @@ const CataloguePage = () => {
 
           {/* Books List Grid */}
           {loading ? (
-            <div style={{ textAlign: 'center', padding: '80px 0', color: '#64748b' }}>
-              <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+            <div style={{ textAlign: 'center', padding: '80px 0', color: 'var(--text-muted)' }}>
+              <div style={{ width: '40px', height: '40px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
               <p>Loading book catalogue...</p>
             </div>
           ) : books.length === 0 ? (
-            <div className="card" style={{ textAlign: 'center', padding: '60px 24px', color: '#64748b' }}>
-              <BookOpen size={48} style={{ color: '#cbd5e1', margin: '0 auto 16px' }} />
-              <h3 style={{ fontSize: '18px', fontWeight: 700, color: '#0f172a', marginBottom: '6px' }}>
+            <div className="card" style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-muted)' }}>
+              <BookOpen size={48} style={{ color: 'var(--border)', margin: '0 auto 16px' }} />
+              <h3 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px' }}>
                 No books match your criteria
               </h3>
               <p style={{ fontSize: '14px', marginBottom: '20px' }}>
@@ -320,10 +323,10 @@ const CataloguePage = () => {
                           width: '40px',
                           height: '40px',
                           borderRadius: '8px',
-                          border: '1px solid #e2e8f0',
-                          background: currentPage === pageNum ? '#4f46e5' : '#ffffff',
-                          color: currentPage === pageNum ? '#ffffff' : '#0f172a',
-                          fontWeight: 700,
+                          border: '1px solid var(--border)',
+                          background: currentPage === pageNum ? 'var(--primary)' : '#ffffff',
+                          color: currentPage === pageNum ? '#ffffff' : 'var(--text-main)',
+                          fontWeight: 600,
                           cursor: 'pointer'
                         }}
                       >
@@ -337,7 +340,8 @@ const CataloguePage = () => {
           )}
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };
 

@@ -18,6 +18,7 @@ import api from '../../services/api';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import StarRating from '../../components/common/StarRating';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const BookDetailPage = () => {
   const { id } = useParams();
@@ -121,7 +122,7 @@ const BookDetailPage = () => {
   if (loading) {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
-        <div style={{ width: '40px', height: '40px', border: '3px solid #e2e8f0', borderTopColor: '#4f46e5', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
+        <div style={{ width: '40px', height: '40px', border: '3px solid var(--border)', borderTopColor: 'var(--primary)', borderRadius: '50%', margin: '0 auto 16px', animation: 'spin 1s linear infinite' }} />
         <p>Loading book details...</p>
       </div>
     );
@@ -160,8 +161,9 @@ const BookDetailPage = () => {
             }}
           >
             <img
-              src={book.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+              src={book.coverPhotoUrl || FALLBACK_BOOK_COVER}
               alt={book.title}
+              onError={handleCoverError}
               style={{
                 maxWidth: '320px',
                 width: '100%',
@@ -173,24 +175,20 @@ const BookDetailPage = () => {
               }}
             />
 
-            {book.isFeatured && (
-              <span style={{ position: 'absolute', top: 20, right: 20, background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff', padding: '4px 12px', borderRadius: '20px', fontSize: '11px', fontWeight: 700 }}>
-                ★ BESTSELLER
-              </span>
-            )}
+
           </div>
 
           {/* Quick Perks */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-            <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <Truck size={20} style={{ color: '#4f46e5' }} />
+            <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <Truck size={20} style={{ color: 'var(--text-main)' }} />
               <div>
                 <strong style={{ display: 'block', fontSize: '12px' }}>Fast Delivery</strong>
                 <span style={{ fontSize: '11px', color: '#64748b' }}>Ships in 24-48 hrs</span>
               </div>
             </div>
-            <div style={{ background: '#f8fafc', padding: '14px', borderRadius: '12px', border: '1px solid #e2e8f0', display: 'flex', alignItems: 'center', gap: 10 }}>
-              <ShieldCheck size={20} style={{ color: '#10b981' }} />
+            <div style={{ background: 'var(--bg-main)', padding: '14px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10 }}>
+              <ShieldCheck size={20} style={{ color: 'var(--text-main)' }} />
               <div>
                 <strong style={{ display: 'block', fontSize: '12px' }}>Authentic Copy</strong>
                 <span style={{ fontSize: '11px', color: '#64748b' }}>Verified publisher</span>
@@ -207,7 +205,7 @@ const BookDetailPage = () => {
             </span>
           )}
 
-          <h1 style={{ fontSize: '32px', fontWeight: 800, lineHeight: 1.25, color: '#0f172a', marginBottom: '8px' }}>
+          <h1 style={{ fontSize: '32px', fontWeight: 700, lineHeight: 1.25, color: 'var(--text-main)', marginBottom: '8px' }}>
             {book.title}
           </h1>
 
@@ -229,8 +227,8 @@ const BookDetailPage = () => {
           </div>
 
           {/* Mode Switcher: Buy vs. Lend */}
-          <div className="card" style={{ padding: '24px', border: '2px solid #e2e8f0' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '20px', background: '#f1f5f9', padding: '4px', borderRadius: '10px' }}>
+          <div className="card" style={{ padding: '24px', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: '20px', background: 'var(--bg-main)', border: '1px solid var(--border)', padding: '4px', borderRadius: '8px' }}>
               <button
                 type="button"
                 onClick={() => setActiveTab('buy')}
@@ -239,8 +237,8 @@ const BookDetailPage = () => {
                   borderRadius: '8px',
                   border: 'none',
                   background: activeTab === 'buy' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'buy' ? '#4f46e5' : '#64748b',
-                  fontWeight: 700,
+                  color: activeTab === 'buy' ? 'var(--text-main)' : 'var(--text-muted)',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   boxShadow: activeTab === 'buy' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
                   display: 'flex',
@@ -260,8 +258,8 @@ const BookDetailPage = () => {
                   borderRadius: '8px',
                   border: 'none',
                   background: activeTab === 'lend' ? '#ffffff' : 'transparent',
-                  color: activeTab === 'lend' ? '#d97706' : '#64748b',
-                  fontWeight: 700,
+                  color: activeTab === 'lend' ? 'var(--text-main)' : 'var(--text-muted)',
+                  fontWeight: 600,
                   cursor: 'pointer',
                   boxShadow: activeTab === 'lend' ? '0 2px 8px rgba(0,0,0,0.06)' : 'none',
                   display: 'flex',
@@ -280,7 +278,7 @@ const BookDetailPage = () => {
                 <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
                   <div>
                     <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Purchase Price</span>
-                    <span style={{ fontSize: '28px', fontWeight: 800, color: '#4f46e5' }}>${Number(book.price).toFixed(2)}</span>
+                    <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)' }}>${Number(book.price).toFixed(2)}</span>
                   </div>
                   <div>
                     {book.stock > 0 ? (
@@ -326,7 +324,7 @@ const BookDetailPage = () => {
                 <div className="flex items-center justify-between" style={{ marginBottom: '16px' }}>
                   <div>
                     <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Calculated Lending Fee</span>
-                    <span style={{ fontSize: '28px', fontWeight: 800, color: '#d97706' }}>${calculatedLendingFee}</span>
+                    <span style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)' }}>${calculatedLendingFee}</span>
                   </div>
                   <div>
                     {book.lendableStock > 0 ? (
@@ -360,10 +358,10 @@ const BookDetailPage = () => {
                             style={{
                               padding: '10px 8px',
                               borderRadius: '8px',
-                              border: `1px solid ${durationDays === days ? '#f59e0b' : '#cbd5e1'}`,
-                              background: durationDays === days ? '#fef3c7' : '#ffffff',
-                              color: durationDays === days ? '#92400e' : '#334155',
-                              fontWeight: 700,
+                              border: `1px solid ${durationDays === days ? 'var(--primary)' : 'var(--border)'}`,
+                              background: durationDays === days ? 'var(--primary-light)' : '#ffffff',
+                              color: durationDays === days ? 'var(--text-main)' : 'var(--text-muted)',
+                              fontWeight: 600,
                               fontSize: '13px',
                               cursor: 'pointer'
                             }}
@@ -376,7 +374,7 @@ const BookDetailPage = () => {
 
                     <div style={{ background: '#f8fafc', padding: '12px 16px', borderRadius: '8px', fontSize: '12px', color: '#475569', marginBottom: '16px' }}>
                       <div className="flex items-center gap-2" style={{ marginBottom: 4 }}>
-                        <Clock size={14} style={{ color: '#f59e0b' }} /> Due Date: <strong>{new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}</strong>
+                        <Clock size={14} style={{ color: 'var(--text-muted)' }} /> Due Date: <strong>{new Date(Date.now() + durationDays * 24 * 60 * 60 * 1000).toLocaleDateString()}</strong>
                       </div>
                       <p style={{ margin: 0 }}>Books must be returned by the due date to avoid automated overdue reminders.</p>
                     </div>

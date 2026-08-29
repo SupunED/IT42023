@@ -24,8 +24,8 @@ const StarRating = ({ rating = 5, totalStars = 5, size = 16, interactive = false
             <Star
               size={size}
               style={{
-                color: isFilled ? '#f59e0b' : '#cbd5e1',
-                fill: isFilled ? '#f59e0b' : 'none',
+                color: isFilled ? 'var(--text-main)' : 'var(--border)',
+                fill: isFilled ? 'var(--text-main)' : 'none',
                 transition: 'all 0.15s ease'
               }}
             />

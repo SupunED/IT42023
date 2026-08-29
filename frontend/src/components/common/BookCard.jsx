@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { ShoppingBag, BookOpen, Check, AlertCircle } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import StarRating from './StarRating';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const BookCard = ({ book }) => {
   const { addToCart } = useCart();
@@ -26,21 +27,22 @@ const BookCard = ({ book }) => {
     <div
       style={{
         background: '#ffffff',
-        borderRadius: '16px',
-        border: '1px solid #e2e8f0',
+        borderRadius: '10px',
+        border: '1px solid var(--border)',
         overflow: 'hidden',
         display: 'flex',
         flexDirection: 'column',
-        transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        transition: 'all 0.2s ease',
         position: 'relative'
       }}
       className="card book-card"
     >
       {/* Cover Image Container */}
-      <Link to={`/books/${book.bookID}`} style={{ position: 'relative', overflow: 'hidden', display: 'block', paddingTop: '135%', background: '#f1f5f9' }}>
+      <Link to={`/books/${book.bookID}`} style={{ position: 'relative', overflow: 'hidden', display: 'block', paddingTop: '135%', background: 'var(--bg-main)' }}>
         <img
-          src={book.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+          src={book.coverPhotoUrl || FALLBACK_BOOK_COVER}
           alt={book.title}
+          onError={handleCoverError}
           style={{
             position: 'absolute',
             top: 0,
@@ -56,13 +58,8 @@ const BookCard = ({ book }) => {
         {/* Badges on Top */}
         <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
           {book.category && (
-            <span style={{ background: 'rgba(15, 23, 42, 0.75)', backdropFilter: 'blur(8px)', color: '#ffffff', padding: '4px 10px', borderRadius: '20px', fontSize: '11px', fontWeight: 600 }}>
+            <span style={{ background: 'rgba(26, 26, 26, 0.8)', color: '#ffffff', padding: '4px 10px', borderRadius: '6px', fontSize: '11px', fontWeight: 500 }}>
               {book.category.name}
-            </span>
-          )}
-          {book.isFeatured && (
-            <span style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', color: '#ffffff', padding: '3px 8px', borderRadius: '20px', fontSize: '10px', fontWeight: 700 }}>
-              ★ BESTSELLER
             </span>
           )}
         </div>
@@ -70,11 +67,11 @@ const BookCard = ({ book }) => {
         {/* Stock Status Badge */}
         <div style={{ position: 'absolute', bottom: 12, right: 12 }}>
           {book.stock > 0 ? (
-            <span style={{ background: 'rgba(16, 185, 129, 0.9)', backdropFilter: 'blur(8px)', color: '#ffffff', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ background: 'rgba(255, 255, 255, 0.95)', color: 'var(--success)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <Check size={12} /> {book.stock} in stock
             </span>
           ) : (
-            <span style={{ background: 'rgba(239, 68, 68, 0.9)', backdropFilter: 'blur(8px)', color: '#ffffff', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 600, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+            <span style={{ background: 'rgba(255, 255, 255, 0.95)', color: 'var(--danger)', padding: '4px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 500, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
               <AlertCircle size={12} /> Out of stock
             </span>
           )}
@@ -85,16 +82,16 @@ const BookCard = ({ book }) => {
       <div style={{ padding: '18px 18px 16px', display: 'flex', flexDirection: 'column', flex: 1 }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
           <StarRating rating={book.rating || 5} size={14} />
-          <span style={{ fontSize: '12px', color: '#64748b' }}>({book.reviewCount || 0})</span>
+          <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>({book.reviewCount || 0})</span>
         </div>
 
         <Link to={`/books/${book.bookID}`}>
           <h3
             style={{
               fontSize: '16px',
-              fontWeight: 700,
+              fontWeight: 600,
               lineHeight: 1.35,
-              color: '#0f172a',
+              color: 'var(--text-main)',
               marginBottom: 4,
               display: '-webkit-box',
               WebkitLineClamp: 2,
@@ -108,21 +105,21 @@ const BookCard = ({ book }) => {
           </h3>
         </Link>
 
-        <p style={{ fontSize: '13px', color: '#64748b', marginBottom: 14 }}>
-          by <strong style={{ color: '#334155' }}>{book.author}</strong>
+        <p style={{ fontSize: '13px', color: 'var(--text-muted)', marginBottom: 14 }}>
+          by <strong style={{ color: 'var(--text-main)', fontWeight: 500 }}>{book.author}</strong>
         </p>
 
         {/* Pricing & Lending Details */}
-        <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid #f1f5f9' }}>
+        <div style={{ marginTop: 'auto', paddingTop: 12, borderTop: '1px solid var(--border-light)' }}>
           <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'space-between', marginBottom: 12 }}>
             <div>
-              <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Buy price</span>
-              <span style={{ fontSize: '19px', fontWeight: 800, color: '#4f46e5' }}>${Number(book.price).toFixed(2)}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Buy price</span>
+              <span style={{ fontSize: '19px', fontWeight: 700, color: 'var(--text-main)' }}>${Number(book.price).toFixed(2)}</span>
             </div>
             {book.lendableStock > 0 && (
               <div style={{ textAlign: 'right' }}>
-                <span style={{ fontSize: '11px', color: '#64748b', textTransform: 'uppercase', display: 'block' }}>Rent from</span>
-                <span style={{ fontSize: '13px', fontWeight: 700, color: '#d97706' }}>${Number(book.lendingPricePerWeek || 2.99).toFixed(2)}/wk</span>
+                <span style={{ fontSize: '11px', color: 'var(--text-muted)', textTransform: 'uppercase', display: 'block' }}>Rent from</span>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-muted)' }}>${Number(book.lendingPricePerWeek || 2.99).toFixed(2)}/wk</span>
               </div>
             )}
           </div>
@@ -146,7 +143,7 @@ const BookCard = ({ book }) => {
               <button
                 onClick={handleQuickLend}
                 className="btn btn-outline btn-sm"
-                style={{ width: '100%', borderColor: '#f59e0b', color: '#b45309' }}
+                style={{ width: '100%' }}
               >
                 <BookOpen size={14} /> Lend
               </button>

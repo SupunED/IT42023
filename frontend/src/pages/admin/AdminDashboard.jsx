@@ -17,6 +17,7 @@ import {
   Upload
 } from 'lucide-react';
 import api from '../../services/api';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -233,104 +234,101 @@ const AdminDashboard = () => {
     setEmailStatus('');
     try {
       await api.post('/admin/send-email', emailData);
-      setEmailStatus('✅ Email successfully dispatched via Azure Communication Services!');
+      setEmailStatus('Email sent successfully.');
       setEmailData({ to: '', subject: '', message: '' });
     } catch (err) {
-      setEmailStatus('❌ Failed to dispatch email: ' + (err.response?.data?.message || err.message));
+      setEmailStatus('Failed to send email: ' + (err.response?.data?.message || err.message));
     } finally {
       setSendingEmail(false);
     }
   };
 
   return (
-    <div className="container" style={{ padding: '40px 24px 80px' }}>
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-4" style={{ marginBottom: '32px' }}>
-        <div>
-          <div className="flex items-center gap-2">
-            <span className="badge badge-accent">Admin Operations Center</span>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>• Azure App Service Protected</span>
-          </div>
-          <h1 style={{ fontSize: '32px', fontWeight: 800, color: '#0f172a', margin: '4px 0 0 0' }}>
-            BookNest Management Console
+    <>
+      {/* Page Header band */}
+      <div style={{ background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', padding: '32px 0' }}>
+        <div className="container flex items-center justify-between flex-wrap gap-4">
+          <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)', margin: 0, letterSpacing: '-0.5px' }}>
+            Admin Dashboard
           </h1>
-        </div>
 
-        {/* Tab Controls */}
-        <div style={{ display: 'flex', gap: 8, background: '#f1f5f9', padding: '4px', borderRadius: '12px' }}>
-          <button
-            onClick={() => setActiveTab('inventory')}
-            className={`btn btn-sm ${activeTab === 'inventory' ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            <BookOpen size={14} /> Books & Inventory
-          </button>
-          <button
-            onClick={() => setActiveTab('orders')}
-            className={`btn btn-sm ${activeTab === 'orders' ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            <Package size={14} /> Orders & Logistics
-          </button>
-          <button
-            onClick={() => setActiveTab('lendings')}
-            className={`btn btn-sm ${activeTab === 'lendings' ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            <Clock size={14} /> Lending Requests
-          </button>
-          <button
-            onClick={() => setActiveTab('email')}
-            className={`btn btn-sm ${activeTab === 'email' ? 'btn-primary' : 'btn-ghost'}`}
-          >
-            <Mail size={14} /> Azure Email Service
-          </button>
+          {/* Tab Controls */}
+          <div style={{ display: 'flex', gap: 6, background: '#ffffff', border: '1px solid var(--border)', padding: '4px', borderRadius: '8px' }}>
+            <button
+              onClick={() => setActiveTab('inventory')}
+              className={`btn btn-sm ${activeTab === 'inventory' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <BookOpen size={14} /> Books & Inventory
+            </button>
+            <button
+              onClick={() => setActiveTab('orders')}
+              className={`btn btn-sm ${activeTab === 'orders' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Package size={14} /> Orders & Logistics
+            </button>
+            <button
+              onClick={() => setActiveTab('lendings')}
+              className={`btn btn-sm ${activeTab === 'lendings' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Clock size={14} /> Lending Requests
+            </button>
+            <button
+              onClick={() => setActiveTab('email')}
+              className={`btn btn-sm ${activeTab === 'email' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Mail size={14} /> Email
+            </button>
+          </div>
         </div>
       </div>
 
+      <div className="container" style={{ padding: '40px 24px 80px' }}>
       {/* KPI Metric Cards */}
       <div className="grid grid-cols-4 lg-grid-cols-2 md-grid-cols-1 gap-6" style={{ marginBottom: '36px' }}>
         <div className="card" style={{ padding: '20px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Total Platform Revenue</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#ecfdf5', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Total Revenue</span>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <DollarSign size={18} />
             </div>
           </div>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>
+          <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)' }}>
             ${stats?.metrics?.totalRevenue ? Number(stats.metrics.totalRevenue).toFixed(2) : '0.00'}
           </span>
         </div>
 
         <div className="card" style={{ padding: '20px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Total Book Orders</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#eef2ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Total Orders</span>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Package size={18} />
             </div>
           </div>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>
+          <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)' }}>
             {stats?.metrics?.totalOrders || 0}
           </span>
         </div>
 
         <div className="card" style={{ padding: '20px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Active Book Lendings</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Active Lendings</span>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Clock size={18} />
             </div>
           </div>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>
+          <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)' }}>
             {stats?.metrics?.activeLendings || 0}
           </span>
         </div>
 
         <div className="card" style={{ padding: '20px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '12px' }}>
-            <span style={{ fontSize: '13px', color: '#64748b', fontWeight: 600 }}>Total Catalogued Titles</span>
-            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: '#f1f5f9', color: '#0f172a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontSize: '13px', color: 'var(--text-muted)', fontWeight: 500 }}>Total Titles</span>
+            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <BookOpen size={18} />
             </div>
           </div>
-          <span style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a' }}>
+          <span style={{ fontSize: '26px', fontWeight: 700, color: 'var(--text-main)' }}>
             {stats?.metrics?.totalBooks || 0}
           </span>
         </div>
@@ -341,9 +339,9 @@ const AdminDashboard = () => {
         <div className="card" style={{ padding: '28px' }}>
           <div className="flex items-center justify-between" style={{ marginBottom: '24px' }}>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Book Inventory Manager</h2>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: '4px 0 0 0' }}>
-                Upload book covers to Azure Blob Storage, update stock, and manage rental rates.
+              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Book Inventory</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
+                Manage covers, stock levels, and rental rates.
               </p>
             </div>
             <button onClick={() => handleOpenBookModal()} className="btn btn-primary btn-sm">
@@ -371,8 +369,9 @@ const AdminDashboard = () => {
                     <td style={{ padding: '12px 8px' }}>
                       <div className="flex items-center gap-3">
                         <img
-                          src={b.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                          src={b.coverPhotoUrl || FALLBACK_BOOK_COVER}
                           alt={b.title}
+                          onError={handleCoverError}
                           style={{ width: '36px', height: '50px', objectFit: 'cover', borderRadius: '4px' }}
                         />
                         <div>
@@ -421,18 +420,18 @@ const AdminDashboard = () => {
       {/* TAB 2: Orders & Delivery Logistics */}
       {activeTab === 'orders' && (
         <div className="card" style={{ padding: '28px' }}>
-          <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>Customer Orders & Delivery Logistics</h2>
+          <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>Orders & Delivery</h2>
 
           {loadingOrders ? (
             <p>Loading orders...</p>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               {orders.map((ord) => (
-                <div key={ord.orderID} className="card" style={{ padding: '20px', background: '#f8fafc' }}>
+                <div key={ord.orderID} className="card" style={{ padding: '20px', background: 'var(--bg-main)' }}>
                   <div className="flex items-center justify-between flex-wrap gap-4" style={{ marginBottom: '14px' }}>
                     <div>
-                      <span style={{ fontSize: '12px', color: '#64748b' }}>Order Date: {new Date(ord.createdAt).toLocaleString()}</span>
-                      <h4 style={{ fontSize: '16px', fontWeight: 800, color: '#4f46e5', margin: '2px 0 0 0' }}>{ord.orderID}</h4>
+                      <span style={{ fontSize: '12px', color: 'var(--text-muted)' }}>Order Date: {new Date(ord.createdAt).toLocaleString()}</span>
+                      <h4 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-main)', margin: '2px 0 0 0' }}>{ord.orderID}</h4>
                       <span style={{ fontSize: '13px', color: '#334155' }}>
                         Customer: <strong>{ord.user?.name || ord.guestName || 'Guest'}</strong> ({ord.user?.email || ord.guestEmail})
                       </span>
@@ -487,8 +486,9 @@ const AdminDashboard = () => {
                   <div className="flex items-center justify-between flex-wrap gap-4">
                     <div className="flex items-center gap-3">
                       <img
-                        src={lend.book?.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                        src={lend.book?.coverPhotoUrl || FALLBACK_BOOK_COVER}
                         alt={lend.book?.title}
+                        onError={handleCoverError}
                         style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '4px' }}
                       />
                       <div>
@@ -542,23 +542,23 @@ const AdminDashboard = () => {
         </div>
       )}
 
-      {/* TAB 4: Azure Email Communication Service Center */}
+      {/* TAB 4: Email */}
       {activeTab === 'email' && (
         <div className="card" style={{ maxWidth: '680px', margin: '0 auto', padding: '32px' }}>
           <div className="flex items-center gap-3" style={{ marginBottom: '20px' }}>
-            <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#fdf2f8', color: '#ec4899', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '8px', background: 'var(--primary-light)', color: 'var(--text-main)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <Mail size={22} />
             </div>
             <div>
-              <h2 style={{ fontSize: '20px', fontWeight: 800, margin: 0 }}>Azure Email Dispatcher</h2>
-              <p style={{ fontSize: '13px', color: '#64748b', margin: 0 }}>
-                Powered by Azure Communication Services with automatic fallback
+              <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Send Email</h2>
+              <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: 0 }}>
+                Send a message to a customer.
               </p>
             </div>
           </div>
 
           {emailStatus && (
-            <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', background: emailStatus.startsWith('✅') ? '#ecfdf5' : '#fef2f2', fontSize: '13px' }}>
+            <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '20px', border: '1px solid var(--border)', color: emailStatus.startsWith('Failed') ? 'var(--danger)' : 'var(--success)', fontSize: '13px' }}>
               {emailStatus}
             </div>
           )}
@@ -602,7 +602,7 @@ const AdminDashboard = () => {
             </div>
 
             <button type="submit" disabled={sendingEmail} className="btn btn-primary" style={{ width: '100%' }}>
-              <Send size={16} /> {sendingEmail ? 'Dispatching via Azure...' : 'Send Transactional Email'}
+              <Send size={16} /> {sendingEmail ? 'Sending...' : 'Send Email'}
             </button>
           </form>
         </div>
@@ -610,9 +610,9 @@ const AdminDashboard = () => {
 
       {/* Book Add/Edit Modal */}
       {showBookModal && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(15, 23, 42, 0.6)', backdropFilter: 'blur(4px)', padding: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(26, 26, 26, 0.5)', padding: '20px' }}>
           <div className="card" style={{ maxWidth: '640px', width: '100%', maxHeight: '90vh', overflowY: 'auto', padding: '32px' }}>
-            <h2 style={{ fontSize: '20px', fontWeight: 800, marginBottom: '20px' }}>
+            <h2 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '20px' }}>
               {editingBook ? 'Edit Book Details' : 'Add New Book to Inventory'}
             </h2>
 
@@ -711,7 +711,7 @@ const AdminDashboard = () => {
               </div>
 
               <div style={{ marginBottom: '14px' }}>
-                <label className="label">Cover Image File (Uploaded to Azure Blob Storage)</label>
+                <label className="label">Cover Image File</label>
                 <input
                   type="file"
                   accept="image/*"
@@ -763,7 +763,8 @@ const AdminDashboard = () => {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 };
 

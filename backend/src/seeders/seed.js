@@ -70,7 +70,7 @@ const seedDatabase = async () => {
         stock: 24,
         lendableStock: 8,
         lendingPricePerWeek: 3.99,
-        coverPhotoUrl: 'https://images.unsplash.com/photo-1532012164546-f432f2e3777a?w=600&auto=format&fit=crop&q=80',
+        coverPhotoUrl: 'https://images.unsplash.com/photo-1517842645767-c639042777db?w=600&auto=format&fit=crop&q=80',
         description: 'Even bad code can function. But if code isn\'t clean, it can bring a development organization to its knees. Master formatting, refactoring, and test-driven craftsmanship.',
         rating: 4.8,
         reviewCount: 65,

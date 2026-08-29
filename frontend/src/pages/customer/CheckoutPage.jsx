@@ -4,6 +4,7 @@ import { ShieldCheck, Truck, CreditCard, Lock, ArrowLeft, CheckCircle2 } from 'l
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
+import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const CheckoutPage = () => {
   const { cart, subtotal, clearCart } = useCart();
@@ -103,7 +104,7 @@ const CheckoutPage = () => {
             {/* Step 1: Customer Contact & Delivery Details */}
             <div className="card" style={{ padding: '28px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <Truck size={20} style={{ color: '#4f46e5' }} /> 1. Delivery & Contact Details
+                <Truck size={20} style={{ color: 'var(--text-main)' }} /> 1. Delivery & Contact Details
               </h3>
 
               <div className="grid grid-cols-2 md-grid-cols-1 gap-4" style={{ marginBottom: '16px' }}>
@@ -200,7 +201,7 @@ const CheckoutPage = () => {
             <div className="card" style={{ padding: '28px' }}>
               <div className="flex items-center justify-between" style={{ marginBottom: '18px' }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
-                  <CreditCard size={20} style={{ color: '#4f46e5' }} /> 2. Payment Method
+                  <CreditCard size={20} style={{ color: 'var(--text-main)' }} /> 2. Payment Method
                 </h3>
                 <span className="badge badge-success flex items-center gap-1">
                   <Lock size={12} /> 256-Bit SSL Encrypted
@@ -285,9 +286,10 @@ const CheckoutPage = () => {
                   return (
                     <div key={item.cartID || item.bookID} style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                       <img
-                        src={book.coverPhotoUrl || 'https://images.unsplash.com/photo-1544716278-ca5e3f4abd8c?w=600&auto=format&fit=crop&q=80'}
+                        src={book.coverPhotoUrl || FALLBACK_BOOK_COVER}
                         alt={book.title}
-                        style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '4px', border: '1px solid #e2e8f0' }}
+                        onError={handleCoverError}
+                        style={{ width: '40px', height: '56px', objectFit: 'cover', borderRadius: '4px', border: '1px solid var(--border)' }}
                       />
                       <div style={{ flex: 1 }}>
                         <h4 style={{ fontSize: '13px', fontWeight: 600, margin: 0, lineHeight: 1.2 }}>{book.title}</h4>
@@ -315,7 +317,7 @@ const CheckoutPage = () => {
                 </div>
                 <div className="flex justify-between" style={{ borderTop: '2px solid #e2e8f0', paddingTop: '10px', fontSize: '18px' }}>
                   <span style={{ fontWeight: 700, color: '#0f172a' }}>Total Amount</span>
-                  <strong style={{ color: '#4f46e5' }}>${grandTotal}</strong>
+                  <strong style={{ color: 'var(--text-main)' }}>${grandTotal}</strong>
                 </div>
               </div>
 
