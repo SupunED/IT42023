@@ -27,6 +27,7 @@ if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 // Security & Middlewares
 app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   contentSecurityPolicy: {
     directives: {
       scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client', 'https://www.payhere.lk'],

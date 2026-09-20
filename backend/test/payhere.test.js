@@ -269,6 +269,7 @@ test('PayHere order lifecycle', async context => {
     assert.equal(allowed.status, 200);
     assert.equal((await allowed.json()).paymentStatus, 'pending');
     assert.equal(allowed.headers.get('cache-control'), 'no-store');
+    assert.equal(allowed.headers.get('referrer-policy'), 'strict-origin-when-cross-origin');
     for (let attempt = 0; attempt < 2; attempt++) {
       const accepted = await fetch(notifyURL, { method: 'POST', body: new URLSearchParams(notification()) });
       assert.equal(accepted.status, 200);
