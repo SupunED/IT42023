@@ -83,7 +83,7 @@ CREATE TABLE `Books` (
   KEY `idx_books_categoryID` (`categoryID`),
   CONSTRAINT `fk_books_category`
     FOREIGN KEY (`categoryID`) REFERENCES `Categories` (`catID`)
-    ON DELETE CASCADE ON UPDATE CASCADE
+    ON DELETE RESTRICT ON UPDATE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- ------------------------------------------------------------

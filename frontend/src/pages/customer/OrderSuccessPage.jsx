@@ -9,6 +9,7 @@ const OrderSuccessPage = () => {
   const order = location.state?.order;
 
   useEffect(() => {
+    if (order?.paymentStatus !== 'paid' || order?.reviewRequired) return;
     // Fire celebratory confetti
     try {
       confetti({
@@ -19,7 +20,18 @@ const OrderSuccessPage = () => {
     } catch (e) {
       // ignore
     }
-  }, []);
+  }, [order?.paymentStatus, order?.reviewRequired]);
+
+  if (order?.paymentStatus !== 'paid' || order?.reviewRequired) {
+    return (
+      <div className="container" style={{ padding: '60px 24px', maxWidth: 720 }}>
+        <h1 style={{ fontSize: 28, marginBottom: 16 }}>Check Your Order</h1>
+        <p style={{ marginBottom: 24 }}>Payment confirmation is not available on this page.</p>
+        <Link to="/checkout" className="btn btn-primary">Check Payment</Link>
+        <Link to={`/tracking?orderID=${encodeURIComponent(orderID)}`} className="btn btn-outline" style={{ marginLeft: 12 }}>Track Order</Link>
+      </div>
+    );
+  }
 
   return (
     <div className="container" style={{ padding: '60px 24px 100px', maxWidth: '720px' }}>
@@ -56,7 +68,7 @@ const OrderSuccessPage = () => {
         </h1>
 
         <p style={{ color: '#64748b', fontSize: '16px', marginBottom: '28px' }}>
-          We've received your order and dispatched an email confirmation with your digital receipt.
+          Your payment is confirmed. Your receipt will be sent to your checkout email address.
         </p>
 
         {/* Order ID Badge Box */}

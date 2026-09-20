@@ -9,6 +9,7 @@ BookNest is a full-stack e-commerce and book-lending platform. Customers can bro
 - Browse featured books and filter the catalogue by category
 - View book details, ratings, reviews, pricing, and availability
 - Add books to a cart and complete guest or authenticated checkout
+- Pay through PayHere Sandbox with verified callbacks and stock reservations; see [PayHere Setup](PAYHERE_SETUP.md)
 - Request books for lending and manage returns
 - Track orders using an order ID and email address
 - View profile details, order history, and active lendings

@@ -2,6 +2,9 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const {
+  getAdminCategories,
+  createCategory,
+  deleteCategory,
   getDashboardStats,
   createBook,
   updateBook,
@@ -23,6 +26,10 @@ const upload = multer({
 // Protect all admin routes
 router.use(authenticate);
 router.use(authorize('admin'));
+
+router.get('/categories', getAdminCategories);
+router.post('/categories', createCategory);
+router.delete('/categories/:id', deleteCategory);
 
 // Admin Dashboard stats
 router.get('/stats', getDashboardStats);

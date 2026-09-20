@@ -14,10 +14,57 @@ import {
   Mail,
   ShieldCheck,
   AlertTriangle,
+  Tags,
   Upload
 } from 'lucide-react';
 import api from '../../services/api';
 import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
+
+const CategoryCreateForm = ({ onCreated }) => {
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async event => {
+    event.preventDefault();
+    setSaving(true);
+    setError('');
+    setMessage('');
+    try {
+      const { data } = await api.post('/admin/categories', { name: name.trim(), description });
+      onCreated(data.category);
+      setName('');
+      setDescription('');
+      setMessage(`Category "${data.category.name}" created.`);
+    } catch (error) {
+      setError(error.response?.data?.message || 'Could not create category. Please retry.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} aria-label="Add category" style={{ marginBottom: 24 }}>
+      <fieldset disabled={saving} style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: 16, marginBottom: 16 }}>
+          <label className="label">Category name *
+            <input className="input" value={name} onChange={event => setName(event.target.value)} maxLength={100} required />
+          </label>
+          <label className="label">Description
+            <input className="input" value={description} onChange={event => setDescription(event.target.value)} maxLength={2000} />
+          </label>
+        </div>
+        <button className="btn btn-primary btn-sm" type="submit" disabled={saving || !name.trim()}>
+          <Plus size={16} /> {saving ? 'Adding...' : 'Add Category'}
+        </button>
+      </fieldset>
+      {error && <p role="alert" style={{ color: 'var(--danger)', marginTop: 12 }}>{error}</p>}
+      {message && <p role="status" style={{ marginTop: 12 }}>{message}</p>}
+    </form>
+  );
+};
 
 const AdminDashboard = () => {
   const [activeTab, setActiveTab] = useState('inventory');
@@ -27,6 +74,13 @@ const AdminDashboard = () => {
   // Books / Inventory State
   const [books, setBooks] = useState([]);
   const [categories, setCategories] = useState([]);
+  const [loadingCategories, setLoadingCategories] = useState(true);
+  const [categoryError, setCategoryError] = useState('');
+  const [categoryMessage, setCategoryMessage] = useState('');
+  const [categoryToDelete, setCategoryToDelete] = useState(null);
+  const [replacementCategoryID, setReplacementCategoryID] = useState('');
+  const [deletingCategory, setDeletingCategory] = useState(false);
+  const [showCategoryCreator, setShowCategoryCreator] = useState(false);
   const [showBookModal, setShowBookModal] = useState(false);
   const [editingBook, setEditingBook] = useState(null);
   const [bookFormData, setBookFormData] = useState({
@@ -69,6 +123,7 @@ const AdminDashboard = () => {
 
   useEffect(() => {
     if (activeTab === 'inventory') fetchBooks();
+    if (activeTab === 'categories') fetchCategories();
     if (activeTab === 'orders') fetchOrders();
     if (activeTab === 'lendings') fetchLendings();
   }, [activeTab]);
@@ -86,11 +141,46 @@ const AdminDashboard = () => {
   };
 
   const fetchCategories = async () => {
+    setLoadingCategories(true);
+    setCategoryError('');
     try {
-      const { data } = await api.get('/books/categories');
+      const { data } = await api.get('/admin/categories');
       setCategories(data.categories || []);
+      setCategoryToDelete(current => current ? data.categories.find(category => category.catID === current.catID) || null : null);
     } catch (err) {
-      console.error('Failed to load categories:', err);
+      setCategoryError('Failed to load categories. Please retry.');
+    } finally {
+      setLoadingCategories(false);
+    }
+  };
+
+  const handleCategoryCreated = category => {
+    setCategories(current => [...current, category].sort((first, second) => first.name.localeCompare(second.name)));
+    setBookFormData(current => ({ ...current, categoryID: category.catID }));
+    setCategoryMessage('');
+  };
+
+  const handleDeleteCategory = async event => {
+    event.preventDefault();
+    setDeletingCategory(true);
+    setCategoryError('');
+    setCategoryMessage('');
+    try {
+      const { data } = await api.delete(`/admin/categories/${categoryToDelete.catID}`, {
+        data: { replacementCategoryID: replacementCategoryID || null }
+      });
+      setCategories(current => current.filter(category => category.catID !== categoryToDelete.catID));
+      setBookFormData(current => String(current.categoryID) === String(categoryToDelete.catID)
+        ? { ...current, categoryID: replacementCategoryID || '' } : current);
+      setCategoryToDelete(null);
+      setReplacementCategoryID('');
+      setCategoryMessage(`Category deleted. ${data.movedBooks} book(s) reassigned.`);
+      await fetchCategories();
+      fetchBooks();
+    } catch (error) {
+      setCategoryError(error.response?.data?.message || 'Could not delete category. Please retry.');
+    } finally {
+      setDeletingCategory(false);
     }
   };
 
@@ -159,6 +249,7 @@ const AdminDashboard = () => {
       });
     }
     setCoverFile(null);
+    setShowCategoryCreator(categories.length === 0);
     setShowBookModal(true);
   };
 
@@ -186,6 +277,7 @@ const AdminDashboard = () => {
       }
       setShowBookModal(false);
       fetchBooks();
+      fetchCategories();
       fetchStats();
     } catch (err) {
       console.error('Error saving book:', err);
@@ -199,6 +291,7 @@ const AdminDashboard = () => {
     try {
       await api.delete(`/admin/books/${bookID}`);
       fetchBooks();
+      fetchCategories();
       fetchStats();
     } catch (err) {
       console.error('Error deleting book:', err);
@@ -253,12 +346,18 @@ const AdminDashboard = () => {
           </h1>
 
           {/* Tab Controls */}
-          <div style={{ display: 'flex', gap: 6, background: '#ffffff', border: '1px solid var(--border)', padding: '4px', borderRadius: '8px' }}>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, background: '#ffffff', border: '1px solid var(--border)', padding: '4px', borderRadius: '8px' }}>
             <button
               onClick={() => setActiveTab('inventory')}
               className={`btn btn-sm ${activeTab === 'inventory' ? 'btn-primary' : 'btn-ghost'}`}
             >
               <BookOpen size={14} /> Books & Inventory
+            </button>
+            <button
+              onClick={() => setActiveTab('categories')}
+              className={`btn btn-sm ${activeTab === 'categories' ? 'btn-primary' : 'btn-ghost'}`}
+            >
+              <Tags size={14} /> Categories
             </button>
             <button
               onClick={() => setActiveTab('orders')}
@@ -337,7 +436,7 @@ const AdminDashboard = () => {
       {/* TAB 1: Inventory & Book Management */}
       {activeTab === 'inventory' && (
         <div className="card" style={{ padding: '28px' }}>
-          <div className="flex items-center justify-between" style={{ marginBottom: '24px' }}>
+          <div className="flex items-center justify-between flex-wrap gap-4" style={{ marginBottom: '24px' }}>
             <div>
               <h2 style={{ fontSize: '18px', fontWeight: 700, margin: 0 }}>Book Inventory</h2>
               <p style={{ fontSize: '13px', color: 'var(--text-muted)', margin: '4px 0 0 0' }}>
@@ -415,6 +514,61 @@ const AdminDashboard = () => {
             </table>
           </div>
         </div>
+      )}
+
+      {activeTab === 'categories' && (
+        <section aria-labelledby="categories-heading">
+          <h2 id="categories-heading" style={{ fontSize: 18, marginBottom: 20 }}>Categories</h2>
+          <CategoryCreateForm onCreated={handleCategoryCreated} />
+          {categoryError && (
+            <div role="alert" style={{ color: 'var(--danger)', marginBottom: 16 }}>
+              <p>{categoryError}</p>
+              <button type="button" className="btn btn-outline btn-sm" onClick={fetchCategories} disabled={loadingCategories || deletingCategory}>Refresh Categories</button>
+            </div>
+          )}
+          {categoryMessage && <p role="status" style={{ marginBottom: 16 }}>{categoryMessage}</p>}
+          {categoryToDelete && (
+            <form onSubmit={handleDeleteCategory} aria-label="Delete category" style={{ borderBlock: '1px solid var(--border)', padding: '20px 0', marginBottom: 24 }}>
+              <h3 style={{ fontSize: 16, overflowWrap: 'anywhere' }}>Delete "{categoryToDelete.name}"?</h3>
+              <p style={{ margin: '12px 0' }}>{categoryToDelete.bookCount} assigned book(s). Books will not be deleted.</p>
+              <label className="label">Move books to
+                <select className="input" value={replacementCategoryID} onChange={event => setReplacementCategoryID(event.target.value)} required={categoryToDelete.bookCount > 0} disabled={deletingCategory}>
+                  <option value="">{categoryToDelete.bookCount > 0 ? 'Select a replacement category' : 'No replacement (empty category)'}</option>
+                  {categories.filter(category => category.catID !== categoryToDelete.catID).map(category => (
+                    <option key={category.catID} value={category.catID}>{category.name}</option>
+                  ))}
+                </select>
+              </label>
+              {categoryToDelete.bookCount > 0 && categories.length < 2 && <p role="status" style={{ marginTop: 12 }}>A replacement category is required. Create another category first.</p>}
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginTop: 16 }}>
+                <button type="submit" className="btn btn-primary btn-sm" disabled={deletingCategory || (categoryToDelete.bookCount > 0 && !replacementCategoryID)}>
+                  <Trash2 size={16} /> {deletingCategory ? 'Deleting...' : replacementCategoryID ? 'Move Books & Delete' : 'Delete Category'}
+                </button>
+                <button type="button" className="btn btn-outline btn-sm" disabled={deletingCategory} onClick={() => { setCategoryToDelete(null); setCategoryError(''); }}>Cancel</button>
+              </div>
+            </form>
+          )}
+          {loadingCategories ? <p role="status">Loading categories...</p> : categories.length === 0 ? <p>No categories yet.</p> : (
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: 14 }}>
+                <thead><tr style={{ borderBottom: '2px solid var(--border)' }}>
+                  <th style={{ padding: 12 }}>Name</th><th style={{ padding: 12 }}>Books</th><th style={{ padding: 12, textAlign: 'right' }}>Actions</th>
+                </tr></thead>
+                <tbody>{categories.map(category => (
+                  <tr key={category.catID} style={{ borderBottom: '1px solid var(--border)' }}>
+                    <td style={{ padding: 12, overflowWrap: 'anywhere' }}><strong>{category.name}</strong>{category.description && <p style={{ color: 'var(--text-muted)', marginTop: 4 }}>{category.description}</p>}</td>
+                    <td style={{ padding: 12 }}>{category.bookCount}</td>
+                    <td style={{ padding: 12, textAlign: 'right' }}>
+                      <button type="button" className="btn btn-ghost btn-sm" title={`Delete ${category.name}`} aria-label={`Delete ${category.name}`} disabled={deletingCategory} onClick={() => {
+                        setCategoryToDelete(category); setReplacementCategoryID(''); setCategoryError(''); setCategoryMessage('');
+                      }}><Trash2 size={16} /></button>
+                    </td>
+                  </tr>
+                ))}</tbody>
+              </table>
+            </div>
+          )}
+        </section>
       )}
 
       {/* TAB 2: Orders & Delivery Logistics */}
@@ -616,6 +770,12 @@ const AdminDashboard = () => {
               {editingBook ? 'Edit Book Details' : 'Add New Book to Inventory'}
             </h2>
 
+            <button type="button" className="btn btn-outline btn-sm" style={{ marginBottom: 16 }} onClick={() => setShowCategoryCreator(current => !current)} aria-expanded={showCategoryCreator}>
+              <Plus size={16} /> {showCategoryCreator ? 'Close Category Form' : 'Add Category'}
+            </button>
+            {showCategoryCreator && <CategoryCreateForm onCreated={handleCategoryCreated} />}
+            {categoryError && <p role="alert" style={{ color: 'var(--danger)' }}>{categoryError} <button type="button" className="btn btn-ghost btn-sm" onClick={fetchCategories}>Retry</button></p>}
+
             <form onSubmit={handleSaveBook}>
               <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '14px' }}>
                 <div>
@@ -642,12 +802,16 @@ const AdminDashboard = () => {
 
               <div className="grid grid-cols-2 gap-4" style={{ marginBottom: '14px' }}>
                 <div>
-                  <label className="label">Category</label>
+                  <label className="label" htmlFor="book-category">Category *</label>
                   <select
+                    id="book-category"
                     value={bookFormData.categoryID}
                     onChange={(e) => setBookFormData({ ...bookFormData, categoryID: e.target.value })}
                     className="input"
+                    required
+                    disabled={loadingCategories}
                   >
+                    <option value="">{loadingCategories ? 'Loading categories...' : categories.length ? 'Select a category' : 'No categories yet'}</option>
                     {categories.map((c) => (
                       <option key={c.catID} value={c.catID}>{c.name}</option>
                     ))}
@@ -753,7 +917,7 @@ const AdminDashboard = () => {
                 </button>
                 <button
                   type="submit"
-                  disabled={submittingBook}
+                  disabled={submittingBook || loadingCategories || !bookFormData.categoryID}
                   className="btn btn-primary"
                 >
                   {submittingBook ? 'Saving Book...' : 'Save to Catalogue'}

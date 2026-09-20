@@ -2,11 +2,15 @@ const cron = require('node-cron');
 const { Op } = require('sequelize');
 const { Lending, Book, User } = require('../models');
 const { sendOverdueReminder } = require('./emailService');
+const { expireReservations } = require('../controllers/paymentController');
 
 /**
  * Initializes scheduled cron jobs
  */
 const initCronJobs = () => {
+  const releaseExpiredPayments = () => expireReservations().catch(error => console.error('Payment reservation cleanup failed:', error.message));
+  cron.schedule('* * * * *', releaseExpiredPayments);
+  releaseExpiredPayments();
   // Run every day at 00:00 UTC (or can be triggered on startup)
   cron.schedule('0 0 * * *', async () => {
     console.log('⏰ [Cron] Running daily check for overdue book lendings...');

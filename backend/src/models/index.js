@@ -10,8 +10,8 @@ const Delivery = require('./Delivery');
 const Review = require('./Review');
 
 // Category & Book Associations
-Category.hasMany(Book, { foreignKey: 'categoryID', as: 'books', onDelete: 'CASCADE' });
-Book.belongsTo(Category, { foreignKey: 'categoryID', as: 'category' });
+Category.hasMany(Book, { foreignKey: 'categoryID', as: 'books', onDelete: 'RESTRICT' });
+Book.belongsTo(Category, { foreignKey: 'categoryID', as: 'category', onDelete: 'RESTRICT' });
 
 // User & Order Associations
 User.hasMany(Order, { foreignKey: 'userID', as: 'orders', onDelete: 'SET NULL' });

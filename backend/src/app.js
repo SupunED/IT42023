@@ -18,6 +18,7 @@ const cartRoutes = require('./routes/cartRoutes');
 const orderRoutes = require('./routes/orderRoutes');
 const lendingRoutes = require('./routes/lendingRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const { notify } = require('./controllers/paymentController');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,9 +29,9 @@ app.use(helmet({
   crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
   contentSecurityPolicy: {
     directives: {
-      scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
-      frameSrc: ["'self'", 'https://accounts.google.com'],
-      connectSrc: ["'self'", 'https://accounts.google.com'],
+      scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client', 'https://www.payhere.lk'],
+      frameSrc: ["'self'", 'https://accounts.google.com', 'https://www.payhere.lk', 'https://sandbox.payhere.lk'],
+      connectSrc: ["'self'", 'https://accounts.google.com', 'https://www.payhere.lk', 'https://sandbox.payhere.lk'],
       imgSrc: ["'self'", 'data:', 'https:'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https:']
     }
@@ -41,6 +42,7 @@ app.use(cors({
   origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true
 }));
+app.post('/api/payments/payhere/notify', express.urlencoded({ extended: false, limit: '16kb' }), notify);
 app.use('/api', requireTrustedOrigin);
 app.use('/api', sessionMiddleware);
 app.use(express.json());

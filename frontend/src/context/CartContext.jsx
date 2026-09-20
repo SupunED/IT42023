@@ -147,6 +147,20 @@ export const CartProvider = ({ children }) => {
     localStorage.removeItem('booknest_guest_cart');
   };
 
+  const clearPurchasedItems = async (purchasedItems) => {
+    if (isAuthenticated) {
+      await fetchServerCart();
+      return;
+    }
+    const saved = JSON.parse(localStorage.getItem('booknest_guest_cart') || '[]');
+    const remaining = saved.map(item => {
+      const purchased = purchasedItems.find(paidItem => paidItem.bookID === item.bookID);
+      return purchased ? { ...item, quantity: Math.max(0, item.quantity - purchased.quantity) } : item;
+    }).filter(item => item.quantity > 0);
+    localStorage.setItem('booknest_guest_cart', JSON.stringify(remaining));
+    setCart(remaining);
+  };
+
   const cartCount = cart.reduce((sum, item) => sum + (item.quantity || 0), 0);
   const subtotal = cart.reduce((sum, item) => {
     const price = item.book ? Number(item.book.price) : 0;
@@ -165,6 +179,7 @@ export const CartProvider = ({ children }) => {
         updateQuantity,
         removeFromCart,
         clearCart,
+        clearPurchasedItems,
         loading
       }}
     >

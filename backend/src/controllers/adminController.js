@@ -1,6 +1,74 @@
-const { Book, Category, Order, OrderItem, Delivery, Lending, User, Review } = require('../models');
+const { sequelize, Book, Category, Order, OrderItem, Delivery, Lending, User, Review } = require('../models');
 const { sendOrderStatusUpdate, sendLendingStatusNotification, sendHtmlEmail } = require('../services/emailService');
 const { uploadMedia } = require('../services/azureStorage');
+const { PAYMENT_METHOD } = require('../services/payhere');
+
+const getAdminCategories = async (req, res) => {
+  try {
+    const categories = await Category.findAll({ order: [['name', 'ASC']] });
+    const counts = await Book.count({ group: ['categoryID'] });
+    const bookCounts = new Map(counts.map(entry => [Number(entry.categoryID), Number(entry.count)]));
+    return res.json({ categories: categories.map(category => ({
+      ...category.toJSON(), bookCount: bookCounts.get(category.catID) || 0
+    })) });
+  } catch (error) {
+    return res.status(500).json({ message: 'Failed to load categories' });
+  }
+};
+
+const createCategory = async (req, res) => {
+  const { name, description = '' } = req.body || {};
+  if (typeof name !== 'string' || !name.trim() || name.trim().length > 100 ||
+      typeof description !== 'string' || description.length > 2000) {
+    return res.status(400).json({ message: 'Provide a category name (1-100 characters) and an optional description (up to 2000 characters).' });
+  }
+  const slug = name.trim().normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, '-').replace(/^-|-$/g, '');
+  if (!slug) return res.status(400).json({ message: 'Category name must contain letters or numbers.' });
+  try {
+    const category = await Category.create({ name: name.trim(), slug, description: description.trim() });
+    return res.status(201).json({ message: 'Category created', category: { ...category.toJSON(), bookCount: 0 } });
+  } catch (error) {
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return res.status(409).json({ message: 'A category with this name or URL slug already exists.' });
+    }
+    return res.status(500).json({ message: 'Failed to create category' });
+  }
+};
+
+const deleteCategory = async (req, res) => {
+  const categoryID = Number(req.params.id);
+  const replacementValue = req.body?.replacementCategoryID;
+  const replacementID = replacementValue == null || replacementValue === '' ? null : Number(replacementValue);
+  if (!/^\d+$/.test(req.params.id) || !Number.isSafeInteger(categoryID) || categoryID < 1 ||
+      (replacementID !== null && (!/^\d+$/.test(String(replacementValue)) || !Number.isSafeInteger(replacementID) || replacementID < 1 || replacementID === categoryID))) {
+    return res.status(400).json({ message: 'Choose a valid, different replacement category.' });
+  }
+  try {
+    const movedBooks = await sequelize.transaction(async transaction => {
+      const lockedCategories = new Map();
+      for (const id of [categoryID, replacementID].filter(id => id !== null).sort((first, second) => first - second)) {
+        lockedCategories.set(id, await Category.findByPk(id, { transaction, lock: transaction.LOCK.UPDATE }));
+      }
+      const category = lockedCategories.get(categoryID);
+      if (!category) throw Object.assign(new Error('Category not found.'), { status: 404 });
+      if (replacementID !== null && !lockedCategories.get(replacementID)) {
+        throw Object.assign(new Error('Replacement category not found.'), { status: 400 });
+      }
+      const bookCount = await Book.count({ where: { categoryID }, transaction });
+      if (bookCount > 0 && replacementID === null) {
+        throw Object.assign(new Error('This category has books. Choose a replacement category before deleting it.'), { status: 409 });
+      }
+      if (bookCount > 0) {
+        await Book.update({ categoryID: replacementID }, { where: { categoryID }, transaction });
+      }
+      await category.destroy({ transaction });
+      return bookCount;
+    });
+    return res.json({ message: 'Category deleted', movedBooks });
+  } catch (error) {
+    return res.status(error.status || 500).json({ message: error.status ? error.message : 'Could not delete category. No books were moved or deleted; please retry.' });
+  }
+};
 
 /**
  * Get aggregated Admin statistics
@@ -238,6 +306,10 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: 'Order not found' });
     }
 
+    if (order.paymentStatus !== 'paid' || (order.paymentMethod === PAYMENT_METHOD && !order.delivery)) {
+      return res.status(409).json({ message: 'Only verified paid orders with an active reservation can enter fulfillment. Review failed, expired or late payments separately.' });
+    }
+
     if (status) {
       order.status = status;
       await order.save();
@@ -411,6 +483,9 @@ const sendDirectEmail = async (req, res) => {
 };
 
 module.exports = {
+  getAdminCategories,
+  createCategory,
+  deleteCategory,
   getDashboardStats,
   createBook,
   updateBook,

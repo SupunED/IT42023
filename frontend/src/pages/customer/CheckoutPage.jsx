@@ -1,13 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { ShieldCheck, Truck, CreditCard, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
+import { Truck, CreditCard, Lock, ArrowLeft, RefreshCw, X } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
 import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
+import { loadPayHere, PENDING_PAYMENT_KEY, readPendingPayment } from '../../services/payhere';
 
 const CheckoutPage = () => {
-  const { cart, subtotal, clearCart, loading: cartLoading } = useCart();
+  const { cart, subtotal, clearPurchasedItems, loading: cartLoading } = useCart();
   const { user, initializing } = useAuth();
   const navigate = useNavigate();
 
@@ -16,18 +17,95 @@ const CheckoutPage = () => {
     email: user?.email || '',
     phone: user?.phone || '',
     street: user?.address || '',
-    city: 'Seattle',
-    state: 'WA',
-    zipCode: '98101',
-    paymentMethod: 'Credit Card (Stripe)',
-    cardNumber: '4242 •••• •••• 4242',
-    cardExp: '12/28',
-    cardCvc: '888',
+    city: '',
+    state: '',
+    zipCode: '',
+    country: 'Sri Lanka',
     notes: ''
   });
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [pendingPayment, setPendingPayment] = useState(readPendingPayment);
+  const [paymentMessage, setPaymentMessage] = useState('');
+  const [reviewRequired, setReviewRequired] = useState(false);
+  const [pollVersion, setPollVersion] = useState(0);
+  const submittingRef = useRef(false);
+  const mountedRef = useRef(true);
+
+  useEffect(() => {
+    mountedRef.current = true;
+    return () => {
+      mountedRef.current = false;
+      if (window.payhere) {
+        window.payhere.onCompleted = () => {};
+        window.payhere.onDismissed = () => {};
+        window.payhere.onError = () => {};
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!pendingPayment || initializing) return;
+    let active = true;
+    let timer;
+    let attempts = 0;
+    const checkStatus = async () => {
+      attempts++;
+      try {
+        const { data } = await api.post('/orders/payment-status', {
+          orderID: pendingPayment.orderID, paymentToken: pendingPayment.paymentToken
+        }, { timeout: 10000 });
+        if (!active) return;
+        if (data.paymentStatus === 'paid') {
+          if (data.reviewRequired) {
+            setReviewRequired(true);
+            setPaymentMessage('Payment received after the stock reservation ended. Contact BookNest with this order ID for fulfillment or a refund. Do not pay again.');
+            return;
+          }
+          if ((pendingPayment.userID || null) === (user?.userID || null)) {
+            await clearPurchasedItems(pendingPayment.items || []);
+          }
+          if (!active) return;
+          sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+          navigate(`/order-success/${data.orderID}`, { replace: true, state: { order: data } });
+          return;
+        }
+        if (data.paymentStatus === 'failed' || data.paymentStatus === 'refunded') {
+          sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+          setPendingPayment(null);
+          setErrorMsg('Payment failed, was cancelled, or expired. Your cart has been kept; you can try again.');
+          setPaymentMessage('');
+          return;
+        }
+        setPaymentMessage('Awaiting payment confirmation. Your books are reserved for 30 minutes from checkout.');
+      } catch {
+        if (!active) return;
+        setPaymentMessage('Unable to confirm payment yet. Do not pay again while the result is unknown.');
+      }
+      if (attempts < 60) timer = setTimeout(checkStatus, 3000);
+      else setPaymentMessage('Payment is still unconfirmed. Check again before making another payment.');
+    };
+    checkStatus();
+    return () => { active = false; clearTimeout(timer); };
+  }, [pendingPayment?.orderID, pollVersion, user?.userID, initializing]);
+
+  const cancelCheckout = async () => {
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
+    try {
+      await api.post('/orders/payment-cancel', {
+        orderID: pendingPayment.orderID, paymentToken: pendingPayment.paymentToken
+      });
+      setPollVersion(version => version + 1);
+    } catch (error) {
+      setPaymentMessage(error.response?.data?.message || 'Cancellation could not be confirmed. Check payment status before trying again.');
+    } finally {
+      submittingRef.current = false;
+      setSubmitting(false);
+    }
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -42,6 +120,23 @@ const CheckoutPage = () => {
 
   if (initializing || cartLoading) {
     return <div className="container" role="status" style={{ padding: '80px 24px' }}>Loading checkout...</div>;
+  }
+
+  if (pendingPayment) {
+    return (
+      <div className="container" style={{ padding: '48px 24px', maxWidth: 720 }}>
+        <h1 style={{ fontSize: 28, marginBottom: 16 }}>{reviewRequired ? 'Payment needs review' : 'Payment in progress'}</h1>
+        <p style={{ overflowWrap: 'anywhere', marginBottom: 12 }}>Order {pendingPayment.orderID}</p>
+        <p role="status" style={{ marginBottom: 24 }}>{paymentMessage || 'Checking payment status...'}</p>
+        <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+          {!reviewRequired && <button type="button" className="btn btn-primary" onClick={() => setPollVersion(version => version + 1)}><RefreshCw size={18} /> Check Payment Status</button>}
+          {!reviewRequired && <button type="button" className="btn btn-outline" disabled={submitting} onClick={cancelCheckout}><X size={18} /> {submitting ? 'Cancelling...' : 'Cancel Checkout'}</button>}
+          <Link className="btn btn-outline" to="/catalogue" onClick={() => {
+            if (reviewRequired) sessionStorage.removeItem(PENDING_PAYMENT_KEY);
+          }}>Back to Catalogue</Link>
+        </div>
+      </div>
+    );
   }
 
   if (cart.length === 0) {
@@ -65,6 +160,7 @@ const CheckoutPage = () => {
 
   const handleSubmitOrder = async (e) => {
     e.preventDefault();
+    if (submittingRef.current) return;
     if (!formData.street || !formData.city || !formData.zipCode) {
       setErrorMsg('Please enter your complete delivery address.');
       return;
@@ -75,17 +171,20 @@ const CheckoutPage = () => {
       return;
     }
 
+    submittingRef.current = true;
     setSubmitting(true);
     setErrorMsg('');
 
     try {
+      const sdk = await loadPayHere();
       const fullDeliveryAddress = `${formData.street}, ${formData.city}, ${formData.state} ${formData.zipCode}`;
       const payload = {
         guestName: formData.name,
         guestEmail: formData.email,
         guestPhone: formData.phone,
         deliveryAddress: fullDeliveryAddress,
-        paymentMethod: formData.paymentMethod,
+        city: formData.city,
+        country: formData.country,
         notes: formData.notes,
         items: cart.map(item => ({
           bookID: item.bookID,
@@ -94,12 +193,29 @@ const CheckoutPage = () => {
       };
 
       const { data } = await api.post('/orders/checkout', payload);
-      clearCart();
-      navigate(`/order-success/${data.orderID}`, { state: { order: data.order } });
+      const pending = { orderID: data.orderID, paymentToken: data.paymentToken, items: payload.items, userID: user?.userID || null };
+      if (mountedRef.current) setPendingPayment(pending);
+      sessionStorage.setItem(PENDING_PAYMENT_KEY, JSON.stringify(pending));
+      if (!mountedRef.current) return;
+      sdk.onCompleted = () => {
+        setPaymentMessage('Verifying payment with BookNest...');
+        setPollVersion(version => version + 1);
+      };
+      sdk.onDismissed = () => {
+        setPaymentMessage('Payment window closed. Checking for a final payment result...');
+        setPollVersion(version => version + 1);
+      };
+      sdk.onError = () => {
+        setPaymentMessage('PayHere could not complete checkout. Checking the payment status before allowing another attempt.');
+        setPollVersion(version => version + 1);
+      };
+      sdk.startPayment({ ...data.payment, return_url: undefined, cancel_url: undefined });
     } catch (err) {
-      console.error('Checkout error:', err);
-      setErrorMsg(err.response?.data?.message || 'Failed to place order. Please try again.');
+      const message = err.response?.data?.message || err.message || 'Unable to open checkout. Check payment status before retrying.';
+      setErrorMsg(message);
+      setPaymentMessage(message);
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   };
@@ -113,9 +229,9 @@ const CheckoutPage = () => {
       <h1 style={{ fontSize: '30px', fontWeight: 800, marginBottom: '32px' }}>Checkout & Place Order</h1>
 
       <form onSubmit={handleSubmitOrder}>
-        <div className="grid grid-cols-3 md-grid-cols-1 gap-8">
+        <div className="checkout-layout">
           {/* Left 2 Columns: Forms */}
-          <div style={{ gridColumn: 'span 2', display: 'flex', flexDirection: 'column', gap: 24 }}>
+          <div style={{ minWidth: 0, display: 'flex', flexDirection: 'column', gap: 24 }}>
             {/* Step 1: Customer Contact & Delivery Details */}
             <div className="card" style={{ padding: '28px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '18px', display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -159,6 +275,7 @@ const CheckoutPage = () => {
                     onChange={handleChange}
                     placeholder="+1 (555) 019-2834"
                     className="input"
+                    required
                   />
                 </div>
                 <div>
@@ -188,14 +305,13 @@ const CheckoutPage = () => {
                   />
                 </div>
                 <div>
-                  <label className="label">State / Province</label>
+                  <label className="label">State / Province (Optional)</label>
                   <input
                     type="text"
                     name="state"
                     value={formData.state}
                     onChange={handleChange}
                     className="input"
-                    required
                   />
                 </div>
                 <div>
@@ -210,66 +326,26 @@ const CheckoutPage = () => {
                   />
                 </div>
               </div>
+              <div style={{ marginTop: 16 }}>
+                <label className="label" htmlFor="checkout-country">Country</label>
+                <input id="checkout-country" className="input" name="country" value={formData.country} onChange={handleChange} required maxLength={100} />
+              </div>
             </div>
 
-            {/* Step 2: Payment Simulator */}
             <div className="card" style={{ padding: '28px' }}>
-              <div className="flex items-center justify-between" style={{ marginBottom: '18px' }}>
+              <div className="flex items-center justify-between" style={{ marginBottom: '18px', flexWrap: 'wrap', gap: 12 }}>
                 <h3 style={{ fontSize: '18px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: 8, margin: 0 }}>
                   <CreditCard size={20} style={{ color: 'var(--text-main)' }} /> 2. Payment Method
                 </h3>
                 <span className="badge badge-success flex items-center gap-1">
-                  <Lock size={12} /> 256-Bit SSL Encrypted
+                  <Lock size={12} /> Sandbox
                 </span>
               </div>
 
-              <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '12px', padding: '18px', marginBottom: '20px' }}>
-                <div className="flex items-center justify-between" style={{ marginBottom: '14px' }}>
-                  <span style={{ fontSize: '14px', fontWeight: 700, color: '#1e293b' }}>Direct Card Payment / Stripe</span>
-                  <div style={{ display: 'flex', gap: 6 }}>
-                    <span style={{ background: '#0f172a', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>VISA</span>
-                    <span style={{ background: '#eb001b', color: '#fff', fontSize: '10px', fontWeight: 800, padding: '2px 6px', borderRadius: '4px' }}>MC</span>
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: '14px' }}>
-                  <label className="label">Card Number</label>
-                  <input
-                    type="text"
-                    name="cardNumber"
-                    value={formData.cardNumber}
-                    onChange={handleChange}
-                    className="input"
-                    required
-                  />
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="label">Expiration Date</label>
-                    <input
-                      type="text"
-                      name="cardExp"
-                      value={formData.cardExp}
-                      onChange={handleChange}
-                      placeholder="MM/YY"
-                      className="input"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="label">CVC / CVV</label>
-                    <input
-                      type="text"
-                      name="cardCvc"
-                      value={formData.cardCvc}
-                      onChange={handleChange}
-                      placeholder="123"
-                      className="input"
-                      required
-                    />
-                  </div>
-                </div>
+              <div style={{ borderBottom: '1px solid var(--border)', paddingBottom: 20, marginBottom: 20 }}>
+                <strong>PayHere</strong>
+                <p style={{ color: 'var(--text-muted)', fontSize: 14 }}>Visa / Mastercard &middot; USD</p>
+                <p style={{ color: 'var(--text-muted)', fontSize: 13, marginTop: 8 }}>Test payments only. No real money is charged.</p>
               </div>
 
               <div>
@@ -288,7 +364,7 @@ const CheckoutPage = () => {
           </div>
 
           {/* Right Column: Order Summary */}
-          <div style={{ gridColumn: 'span 1' }}>
+          <div style={{ minWidth: 0 }}>
             <div className="card" style={{ padding: '24px', position: 'sticky', top: '90px' }}>
               <h3 style={{ fontSize: '18px', fontWeight: 700, marginBottom: '16px', borderBottom: '1px solid #f1f5f9', paddingBottom: '12px' }}>
                 Order Summary
@@ -331,13 +407,13 @@ const CheckoutPage = () => {
                   </strong>
                 </div>
                 <div className="flex justify-between" style={{ borderTop: '2px solid #e2e8f0', paddingTop: '10px', fontSize: '18px' }}>
-                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Total Amount</span>
+                  <span style={{ fontWeight: 700, color: '#0f172a' }}>Total (USD)</span>
                   <strong style={{ color: 'var(--text-main)' }}>${grandTotal}</strong>
                 </div>
               </div>
 
               {errorMsg && (
-                <p style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>{errorMsg}</p>
+                <p role="alert" style={{ color: '#ef4444', fontSize: '13px', marginBottom: '14px' }}>{errorMsg}</p>
               )}
 
               <button
@@ -346,11 +422,11 @@ const CheckoutPage = () => {
                 className="btn btn-primary btn-lg"
                 style={{ width: '100%', marginBottom: '12px' }}
               >
-                {submitting ? 'Processing Payment...' : `Confirm & Pay $${grandTotal}`}
+                <CreditCard size={18} /> {submitting ? 'Opening PayHere...' : `Pay USD ${grandTotal}`}
               </button>
 
               <p style={{ fontSize: '11px', color: '#94a3b8', textAlign: 'center', margin: 0 }}>
-                Instant confirmation & tracking ID will be sent to your email.
+                Confirmation is sent after payment verification.
               </p>
             </div>
           </div>

@@ -1,11 +1,12 @@
-const { sequelize, Order, OrderItem, Delivery, Book, Cart, User } = require('../models');
-const { sendOrderConfirmation } = require('../services/emailService');
+const { randomUUID } = require('node:crypto');
+const { sequelize, Order, OrderItem, Delivery, Book } = require('../models');
+const payhere = require('../services/payhere');
 
 /**
  * Generate unique readable order ID like BN-2026-59123
  */
 const generateOrderID = () => {
-  const randomNum = Math.floor(10000 + Math.random() * 90000);
+  const randomNum = randomUUID().replace(/-/g, '').slice(0, 16).toUpperCase();
   const year = new Date().getFullYear();
   return `BN-${year}-${randomNum}`;
 };
@@ -14,145 +15,64 @@ const generateOrderID = () => {
  * Create a new order (Supports Authenticated Customer and Guest Checkout)
  */
 const checkout = async (req, res) => {
-  const transaction = await sequelize.transaction();
   try {
+    const config = payhere.getConfig();
     const userID = req.user ? req.user.userID : null;
     const {
       guestEmail,
       guestName,
       guestPhone,
       deliveryAddress,
-      paymentMethod = 'Credit Card (Stripe)',
-      items = [], // Array of { bookID, quantity }
+      city,
+      country,
+      items = [],
       notes
-    } = req.body;
-
-    if (!deliveryAddress) {
-      await transaction.rollback();
-      return res.status(400).json({ message: 'Delivery address is required' });
+    } = req.body || {};
+    const contact = { name: guestName || req.user?.name, email: guestEmail || req.user?.email,
+      phone: guestPhone || req.user?.phone, address: deliveryAddress, city, country };
+    if (Object.values(contact).some(value => typeof value !== 'string' || !value.trim() || value.length > 250) ||
+        !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contact.email) || !/^[+\d\s()-]{7,30}$/.test(contact.phone) ||
+        (notes != null && (typeof notes !== 'string' || notes.length > 2000))) {
+      return res.status(400).json({ message: 'Provide valid contact details, city, country and delivery address.' });
     }
-
-    if (!userID && !guestEmail) {
-      await transaction.rollback();
-      return res.status(400).json({ message: 'Guest email is required for guest checkout' });
+    if (!Array.isArray(items) || items.length === 0 || items.length > 100 || items.some(item =>
+      !item || typeof item.bookID !== 'string' || !item.bookID || item.bookID.length > 100 ||
+      !Number.isSafeInteger(item.quantity) || item.quantity < 1 || item.quantity > 100) ||
+      new Set(items.map(item => item.bookID)).size !== items.length) {
+      return res.status(400).json({ message: 'Provide unique books with whole quantities between 1 and 100.' });
     }
-
-    if (!items || items.length === 0) {
-      await transaction.rollback();
-      return res.status(400).json({ message: 'Order must contain at least one book' });
-    }
-
-    let subtotal = 0;
-    const orderItemsToCreate = [];
-    const booksToUpdate = [];
-
-    // Validate books and stock
-    for (const item of items) {
-      const book = await Book.findByPk(item.bookID, { transaction });
-      if (!book) {
-        await transaction.rollback();
-        return res.status(404).json({ message: `Book not found: ${item.bookID}` });
+    const order = await sequelize.transaction(async transaction => {
+      let subtotalCents = 0;
+      const orderItems = [];
+      for (const item of [...items].sort((first, second) => first.bookID.localeCompare(second.bookID))) {
+        const book = await Book.findByPk(item.bookID, { transaction, lock: transaction.LOCK.UPDATE });
+        if (!book || !book.isAvailable || book.stock < item.quantity) {
+          throw Object.assign(new Error('A book is unavailable or has insufficient stock. Update your cart and retry.'), { status: 409 });
+        }
+        const priceCents = Math.round(Number(book.price) * 100);
+        if (!Number.isSafeInteger(priceCents) || priceCents < 0) throw new Error('Invalid book price');
+        subtotalCents += priceCents * item.quantity;
+        orderItems.push({ bookID: book.bookID, quantity: item.quantity, unitPrice: (priceCents / 100).toFixed(2), totalPrice: (priceCents * item.quantity / 100).toFixed(2) });
+        book.stock -= item.quantity;
+        if (book.stock === 0) book.isAvailable = false;
+        await book.save({ transaction });
       }
-
-      const qty = parseInt(item.quantity) || 1;
-      if (book.stock < qty) {
-        await transaction.rollback();
-        return res.status(400).json({
-          message: `Insufficient stock for "${book.title}". Available: ${book.stock}, Requested: ${qty}`
-        });
-      }
-
-      const itemTotal = Number(book.price) * qty;
-      subtotal += itemTotal;
-
-      orderItemsToCreate.push({
-        bookID: book.bookID,
-        quantity: qty,
-        unitPrice: book.price,
-        totalPrice: parseFloat(itemTotal.toFixed(2)),
-        bookTitle: book.title // Cached for email
-      });
-
-      // Deduct inventory
-      book.stock -= qty;
-      if (book.stock === 0) {
-        book.isAvailable = false;
-      }
-      booksToUpdate.push(book);
-    }
-
-    const shippingFee = subtotal > 50 ? 0.00 : 4.99;
-    const total = parseFloat((subtotal + shippingFee).toFixed(2));
-    const orderID = generateOrderID();
-
-    // 1. Create Order
-    const order = await Order.create({
-      orderID,
-      userID,
-      guestEmail: guestEmail || (req.user ? req.user.email : null),
-      guestName: guestName || (req.user ? req.user.name : 'Valued Customer'),
-      guestPhone: guestPhone || (req.user ? req.user.phone : null),
-      subtotal: parseFloat(subtotal.toFixed(2)),
-      shippingFee,
-      total,
-      paymentStatus: 'paid', // Simulated successful payment
-      paymentMethod,
-      paymentTransactionID: `TXN-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
-      deliveryAddress,
-      status: 'Reviewing',
-      notes
-    }, { transaction });
-
-    // 2. Save Order Items
-    for (const item of orderItemsToCreate) {
-      await OrderItem.create({
-        orderID: order.orderID,
-        bookID: item.bookID,
-        quantity: item.quantity,
-        unitPrice: item.unitPrice,
-        totalPrice: item.totalPrice
+      const shippingCents = subtotalCents >= 5000 ? 0 : 499;
+      const created = await Order.create({
+        orderID: generateOrderID(), userID, guestEmail: contact.email.trim(), guestName: contact.name.trim(), guestPhone: contact.phone.trim(),
+        subtotal: (subtotalCents / 100).toFixed(2), shippingFee: (shippingCents / 100).toFixed(2), total: ((subtotalCents + shippingCents) / 100).toFixed(2),
+        paymentStatus: 'pending', paymentMethod: payhere.PAYMENT_METHOD, paymentTransactionID: null,
+        deliveryAddress, status: 'Reviewing', notes
       }, { transaction });
-    }
-
-    // 3. Update Book Stocks
-    for (const book of booksToUpdate) {
-      await book.save({ transaction });
-    }
-
-    // 4. Create Delivery Tracking Record
-    await Delivery.create({
-      orderID: order.orderID,
-      trackingNumber: `TRK-${Math.floor(100000000 + Math.random() * 900000000)}`,
-      carrier: 'BookNest Express Courier',
-      status: 'Pending',
-      estimatedDeliveryDate: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000), // +3 days
-      notes: 'Parcel packaging initiated at Seattle Fulfillment Hub'
-    }, { transaction });
-
-    // 5. Clear Cart if user was logged in
-    if (userID) {
-      await Cart.destroy({ where: { userID }, transaction });
-    }
-
-    await transaction.commit();
-
-    // 6. Asynchronously trigger Azure Email Notification
-    const recipientEmail = order.guestEmail;
-    sendOrderConfirmation(order, orderItemsToCreate.map(i => ({
-      quantity: i.quantity,
-      totalPrice: i.totalPrice,
-      book: { title: i.bookTitle }
-    })), recipientEmail).catch(err => console.error('Order email error:', err));
-
-    return res.status(201).json({
-      message: 'Order placed successfully!',
-      orderID: order.orderID,
-      order
+      for (const item of orderItems) await OrderItem.create({ ...item, orderID: created.orderID }, { transaction });
+      return created;
     });
+    res.set('Cache-Control', 'no-store');
+    return res.status(201).json({ orderID: order.orderID, payment: payhere.createPayment(order, contact, config),
+      paymentToken: payhere.statusToken(order.orderID, config), expiresAt: new Date(new Date(order.createdAt).getTime() + payhere.RESERVATION_MS) });
   } catch (error) {
-    await transaction.rollback();
     console.error('Checkout error:', error);
-    return res.status(500).json({ message: 'Failed to process checkout', error: error.message });
+    return res.status(error.status || 500).json({ message: error.status ? error.message : 'Failed to start checkout. Please try again.' });
   }
 };
 
