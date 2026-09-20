@@ -7,8 +7,8 @@ const dotenv = require('dotenv');
 
 dotenv.config();
 
-const { sequelize, User } = require('./models');
-const seedDatabase = require('./seeders/seed');
+const { sequelize } = require('./models');
+const { sessionMiddleware, sessionStore, allowedOrigins, requireTrustedOrigin } = require('./config/session');
 const { initCronJobs } = require('./services/scheduler');
 
 // Routes
@@ -21,15 +21,28 @@ const adminRoutes = require('./routes/adminRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 // Security & Middlewares
 app.use(helmet({
+  crossOriginOpenerPolicy: { policy: 'same-origin-allow-popups' },
+  contentSecurityPolicy: {
+    directives: {
+      scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client'],
+      frameSrc: ["'self'", 'https://accounts.google.com'],
+      connectSrc: ["'self'", 'https://accounts.google.com'],
+      imgSrc: ["'self'", 'data:', 'https:'],
+      styleSrc: ["'self'", "'unsafe-inline'", 'https:']
+    }
+  },
   crossOriginResourcePolicy: false // Allow loading local /uploads assets
 }));
 app.use(cors({
-  origin: '*',
+  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
   credentials: true
 }));
+app.use('/api', requireTrustedOrigin);
+app.use('/api', sessionMiddleware);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(morgan('dev'));
@@ -83,12 +96,7 @@ const startServer = async () => {
     // Sync models (schema is imported via SQL; this only creates missing tables)
     await sequelize.sync();
 
-    // Seed if database is empty
-    const userCount = await User.count();
-    if (userCount === 0) {
-      console.log('🌱 Database is empty. Running initial seeder...');
-      await seedDatabase();
-    }
+    await sessionStore.sync();
 
     // Start background schedulers (overdue notifications)
     initCronJobs();
@@ -103,6 +111,6 @@ const startServer = async () => {
   }
 };
 
-startServer();
+if (require.main === module) startServer();
 
 module.exports = app;

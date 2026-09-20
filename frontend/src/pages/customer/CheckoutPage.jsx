@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { ShieldCheck, Truck, CreditCard, Lock, ArrowLeft, CheckCircle2 } from 'lucide-react';
 import { useCart } from '../../context/CartContext';
@@ -7,8 +7,8 @@ import api from '../../services/api';
 import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const CheckoutPage = () => {
-  const { cart, subtotal, clearCart } = useCart();
-  const { user, isAuthenticated } = useAuth();
+  const { cart, subtotal, clearCart, loading: cartLoading } = useCart();
+  const { user, initializing } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -28,6 +28,21 @@ const CheckoutPage = () => {
 
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+
+  useEffect(() => {
+    if (!user) return;
+    setFormData(current => ({
+      ...current,
+      name: current.name || user.name || '',
+      email: current.email || user.email || '',
+      phone: current.phone || user.phone || '',
+      street: current.street || user.address || ''
+    }));
+  }, [user]);
+
+  if (initializing || cartLoading) {
+    return <div className="container" role="status" style={{ padding: '80px 24px' }}>Loading checkout...</div>;
+  }
 
   if (cart.length === 0) {
     return (
@@ -115,7 +130,7 @@ const CheckoutPage = () => {
                     name="name"
                     value={formData.name}
                     onChange={handleChange}
-                    placeholder="Eleanor Vance"
+                    placeholder="Full name"
                     className="input"
                     required
                   />
@@ -127,7 +142,7 @@ const CheckoutPage = () => {
                     name="email"
                     value={formData.email}
                     onChange={handleChange}
-                    placeholder="eleanor@example.com"
+                    placeholder="you@example.com"
                     className="input"
                     required
                   />

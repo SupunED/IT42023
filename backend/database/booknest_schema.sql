@@ -9,7 +9,7 @@
 --   3. Make sure your backend .env has:
 --        DB_NAME=booknest_db  DB_USER=root  DB_PASSWORD=  DB_HOST=localhost  DB_PORT=3306
 --   4. Start the backend once; Sequelize sync() will keep it in sync
---      and the seeder will populate initial data if tables are empty.
+--      Run npm --prefix backend run seed explicitly to add catalogue data.
 -- ============================================================
 
 SET FOREIGN_KEY_CHECKS = 0;
@@ -29,7 +29,6 @@ CREATE TABLE `Users` (
   `googleID`   VARCHAR(255) DEFAULT NULL,
   `name`       VARCHAR(255) NOT NULL,
   `email`      VARCHAR(255) NOT NULL,
-  `password`   VARCHAR(255) DEFAULT NULL,
   `avatarUrl`  VARCHAR(255) DEFAULT NULL,
   `phone`      VARCHAR(255) DEFAULT NULL,
   `address`    TEXT         DEFAULT NULL,
@@ -239,5 +238,5 @@ CREATE TABLE `Reviews` (
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- ============================================================
--- End of schema. Start the backend to auto-seed initial data.
+-- End of schema. Startup creates the session table; catalogue seeding is explicit.
 -- ============================================================

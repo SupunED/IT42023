@@ -13,17 +13,18 @@ import {
   FileText
 } from 'lucide-react';
 import api from '../../services/api';
+import { useAuth } from '../../context/AuthContext';
 import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const ORDER_STAGES = ['Reviewing', 'Processing', 'Ready', 'In Progress', 'Delivered'];
 
 const OrderTrackingPage = () => {
+  const { isAuthenticated, initializing } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const initialOrderID = searchParams.get('orderID') || '';
-  const initialEmail = searchParams.get('email') || '';
 
   const [orderID, setOrderID] = useState(initialOrderID);
-  const [email, setEmail] = useState(initialEmail);
+  const [email, setEmail] = useState('');
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
@@ -33,7 +34,7 @@ const OrderTrackingPage = () => {
     setLoading(true);
     setErrorMsg('');
     try {
-      const { data } = await api.get(`/orders/track?orderID=${encodeURIComponent(searchId)}${searchEmail ? `&email=${encodeURIComponent(searchEmail)}` : ''}`);
+      const { data } = await api.post('/orders/track', { orderID: searchId, email: searchEmail });
       setOrder(data.order);
     } catch (err) {
       setOrder(null);
@@ -44,15 +45,16 @@ const OrderTrackingPage = () => {
   };
 
   useEffect(() => {
-    if (initialOrderID) {
-      fetchTracking(initialOrderID, initialEmail);
+    setOrder(null);
+    if (!initializing && isAuthenticated && initialOrderID) {
+      fetchTracking(initialOrderID, '');
     }
-  }, [initialOrderID, initialEmail]);
+  }, [initialOrderID, isAuthenticated, initializing]);
 
   const handleTrackSubmit = (e) => {
     e.preventDefault();
     if (!orderID.trim()) return;
-    setSearchParams({ orderID: orderID.trim(), email: email.trim() });
+    if (searchParams.has('email')) setSearchParams({ orderID: orderID.trim() }, { replace: true });
     fetchTracking(orderID.trim(), email.trim());
   };
 
@@ -72,9 +74,6 @@ const OrderTrackingPage = () => {
           <h1 style={{ fontSize: '28px', fontWeight: 700, color: 'var(--text-main)', marginBottom: '6px', letterSpacing: '-0.5px' }}>
             Track Your Delivery
           </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '14px', maxWidth: '520px', margin: '0 auto' }}>
-            Enter your Order ID below to view live delivery progression, courier notes, and parcel milestones.
-          </p>
         </div>
       </div>
 
@@ -82,10 +81,11 @@ const OrderTrackingPage = () => {
       {/* Search Box Card */}
       <div className="card" style={{ padding: '28px', marginBottom: '36px' }}>
         <form onSubmit={handleTrackSubmit}>
-          <div className="grid grid-cols-3 md-grid-cols-1 gap-4 items-end">
-            <div style={{ gridColumn: 'span 2' }}>
-              <label className="label">Order Tracking ID *</label>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: 16, alignItems: 'end' }}>
+            <div>
+              <label className="label" htmlFor="tracking-order">Order Tracking ID *</label>
               <input
+                id="tracking-order"
                 type="text"
                 value={orderID}
                 onChange={(e) => setOrderID(e.target.value)}
@@ -96,9 +96,13 @@ const OrderTrackingPage = () => {
               />
             </div>
             <div>
+              <label className="label" htmlFor="tracking-email">Checkout Email{isAuthenticated ? ' (guest orders)' : ' *'}</label>
+              <input id="tracking-email" type="email" autoComplete="email" value={email} onChange={event => setEmail(event.target.value)} className="input" required={!isAuthenticated} />
+            </div>
+            <div>
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || initializing}
                 className="btn btn-primary"
                 style={{ width: '100%', height: '44px' }}
               >
@@ -181,19 +185,10 @@ const OrderTrackingPage = () => {
           {/* Delivery Details Card */}
           <div className="grid grid-cols-2 md-grid-cols-1 gap-6" style={{ background: '#f8fafc', padding: '20px', borderRadius: '14px', border: '1px solid #e2e8f0', marginBottom: '28px' }}>
             <div>
-              <h4 style={{ fontSize: '13px', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>Delivery Address</h4>
-              <p style={{ fontSize: '14px', fontWeight: 600, color: '#0f172a', margin: 0, display: 'flex', alignItems: 'flex-start', gap: 6 }}>
-                <MapPin size={16} style={{ color: 'var(--text-main)', marginTop: 2, flexShrink: 0 }} />
-                {order.deliveryAddress}
-              </p>
-            </div>
-
-            <div>
               <h4 style={{ fontSize: '13px', textTransform: 'uppercase', color: '#64748b', marginBottom: '8px' }}>Courier Information</h4>
               <p style={{ fontSize: '14px', color: '#0f172a', margin: 0 }}>
                 <strong>Carrier:</strong> {order.delivery?.carrier || 'BookNest Express'}<br/>
                 <strong>Tracking No:</strong> {order.delivery?.trackingNumber || 'Pending assignment'}<br/>
-                {order.delivery?.notes && <span style={{ fontSize: '12px', color: '#64748b' }}>Latest update: {order.delivery.notes}</span>}
               </p>
             </div>
           </div>

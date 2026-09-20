@@ -1,11 +1,9 @@
-const jwt = require('jsonwebtoken');
 const { OAuth2Client } = require('google-auth-library');
 const { User } = require('../models');
 const dotenv = require('dotenv');
 
 dotenv.config();
 
-const JWT_SECRET = process.env.JWT_SECRET || 'booknest_super_secure_jwt_secret_2026';
 const GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID;
 
 const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
@@ -15,49 +13,39 @@ const googleClient = new OAuth2Client(GOOGLE_CLIENT_ID);
  */
 const verifyGoogleToken = async (idToken) => {
   if (!GOOGLE_CLIENT_ID) {
-    console.warn('⚠️ GOOGLE_CLIENT_ID not set. Mocking Google token payload for demo.');
-    return {
-      email: 'demo.user@booknest.com',
-      name: 'Demo Google User',
-      picture: 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=150&auto=format&fit=crop&q=80',
-      sub: 'google-sub-mock-12345'
-    };
+    const error = new Error('Google sign-in is not configured.');
+    error.status = 503;
+    throw error;
   }
 
   const ticket = await googleClient.verifyIdToken({
     idToken,
     audience: GOOGLE_CLIENT_ID
   });
-  return ticket.getPayload();
+  const payload = ticket.getPayload();
+  if (!payload?.sub || !payload.email || payload.email_verified !== true) {
+    throw new Error('A verified Google email is required.');
+  }
+  return payload;
 };
 
 /**
- * Middleware to authenticate requests via JWT Bearer token or cookie
+ * Middleware to authenticate requests using a server-side Google session
  */
 const authenticate = async (req, res, next) => {
   try {
-    let token = null;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
-    } else if (req.cookies && req.cookies.token) {
-      token = req.cookies.token;
+    if (!req.session?.userID || !req.session.googleID) {
+      return res.status(401).json({ message: 'Please sign in with Google.' });
     }
-
-    if (!token) {
-      return res.status(401).json({ message: 'Authentication required. No token provided.' });
-    }
-
-    const decoded = jwt.verify(token, JWT_SECRET);
-    const user = await User.findByPk(decoded.userID);
-
-    if (!user) {
-      return res.status(401).json({ message: 'User belonging to token no longer exists.' });
+    const user = await User.findByPk(req.session.userID);
+    if (!user || user.googleID !== req.session.googleID) {
+      return res.status(401).json({ message: 'Your session is no longer valid.' });
     }
 
     req.user = user;
     next();
   } catch (error) {
-    return res.status(401).json({ message: 'Invalid or expired token.', error: error.message });
+    return res.status(503).json({ message: 'Unable to verify your session. Please try again.' });
   }
 };
 
@@ -65,20 +53,8 @@ const authenticate = async (req, res, next) => {
  * Middleware for optional authentication (e.g. for guest checkout or public endpoints)
  */
 const optionalAuth = async (req, res, next) => {
-  try {
-    let token = null;
-    if (req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
-      token = req.headers.authorization.split(' ')[1];
-    }
-    if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET);
-      const user = await User.findByPk(decoded.userID);
-      if (user) {
-        req.user = user;
-      }
-    }
-  } catch (err) {
-    // Continue as guest
+  if (req.session?.userID) {
+    return authenticate(req, res, next);
   }
   next();
 };
@@ -98,7 +74,6 @@ const authorize = (...roles) => {
 };
 
 module.exports = {
-  JWT_SECRET,
   verifyGoogleToken,
   authenticate,
   optionalAuth,

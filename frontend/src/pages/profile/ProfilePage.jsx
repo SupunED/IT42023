@@ -17,7 +17,7 @@ import api from '../../services/api';
 import { FALLBACK_BOOK_COVER, handleCoverError } from '../../utils/images';
 
 const ProfilePage = () => {
-  const { user, updateUserProfile, quickDemoLogin } = useAuth();
+  const { user, updateUserProfile } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const activeTab = searchParams.get('tab') || 'profile';
 
@@ -113,9 +113,9 @@ const ProfilePage = () => {
     return (
       <div className="container" style={{ padding: '80px 24px', textAlign: 'center' }}>
         <h2>Sign in to view your profile & library account</h2>
-        <button onClick={() => quickDemoLogin('customer')} className="btn btn-primary" style={{ marginTop: '16px' }}>
-          Instant Demo Sign In
-        </button>
+        <Link to="/sign-in" state={{ from: { pathname: '/profile' } }} className="btn btn-primary" style={{ marginTop: '16px' }}>
+          Sign In
+        </Link>
       </div>
     );
   }
@@ -126,11 +126,11 @@ const ProfilePage = () => {
       <div style={{ background: 'var(--primary-light)', borderBottom: '1px solid var(--border)', padding: '32px 0' }}>
         <div className="container flex items-center justify-between flex-wrap gap-4">
           <div className="flex items-center gap-4">
-            <img
-              src={user.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
+            {user.avatarUrl ? <img
+              src={user.avatarUrl}
               alt={user.name}
               style={{ width: '64px', height: '64px', borderRadius: '50%', objectFit: 'cover', border: '2px solid #ffffff' }}
-            />
+            /> : <UserIcon size={48} />}
             <div>
               <h1 style={{ fontSize: '24px', fontWeight: 700, margin: 0, letterSpacing: '-0.5px' }}>{user.name}</h1>
               <p style={{ fontSize: '14px', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>{user.email}</p>

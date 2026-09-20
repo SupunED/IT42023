@@ -25,14 +25,16 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
-      - NODE_ENV=production
+      - NODE_ENV=development
       - DB_HOST=db
       - DB_PORT=3306
       - DB_NAME=booknest_db
       - DB_USER=root
       - DB_PASSWORD=booknest_root_pw
       - DB_SSL=false
-      - JWT_SECRET=booknest_secure_jwt_key_2026
+      - SESSION_SECRET=${SESSION_SECRET:?Set SESSION_SECRET to a random value of at least 32 characters}
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:?Set GOOGLE_CLIENT_ID to your Google web client ID}
+      - APP_ORIGINS=http://localhost:3000,http://localhost:5000
     depends_on:
       db:
         condition: service_healthy
@@ -43,6 +45,8 @@ services:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
     ports:
       - "3000:80"
     depends_on:

@@ -1,58 +1,47 @@
-const jwt = require('jsonwebtoken');
-const { User, Order, Lending, Book, Review } = require('../models');
-const { verifyGoogleToken, JWT_SECRET } = require('../middleware/auth');
+const { User, Order, Lending, Book } = require('../models');
+const { verifyGoogleToken } = require('../middleware/auth');
 
 /**
  * Handle Google OAuth Sign-In or Sign-Up
  */
 const googleAuth = async (req, res) => {
+  const { idToken, ...extraFields } = req.body || {};
+  if (typeof idToken !== 'string' || !idToken.trim() || Object.keys(extraFields).length) {
+    return res.status(400).json({ message: 'Only a Google ID token is accepted.' });
+  }
+
+  let payload;
   try {
-    const { idToken, demoRole, demoEmail, demoName } = req.body;
+    payload = await verifyGoogleToken(idToken);
+  } catch (error) {
+    return res.status(error.status === 503 ? 503 : 401).json({
+      message: error.status === 503 ? 'Google sign-in is not configured.' : 'Google sign-in could not be verified.'
+    });
+  }
 
-    let email, name, avatarUrl, googleID;
-
-    // Fast-track demo login support for evaluation
-    if (demoRole) {
-      email = demoEmail || (demoRole === 'admin' ? 'admin@booknest.com' : 'eleanor@example.com');
-      name = demoName || (demoRole === 'admin' ? 'System Administrator' : 'Eleanor Vance');
-      avatarUrl = demoRole === 'admin' 
-        ? 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80'
-        : 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80';
-      googleID = `demo-${demoRole}-${Date.now()}`;
-    } else if (idToken) {
-      const payload = await verifyGoogleToken(idToken);
-      email = payload.email;
-      name = payload.name;
-      avatarUrl = payload.picture;
-      googleID = payload.sub;
-    } else {
-      return res.status(400).json({ message: 'Missing Google idToken or credentials.' });
-    }
-
-    let user = await User.findOne({ where: { email } });
-
+  try {
+    let user = await User.findOne({ where: { googleID: payload.sub } });
     if (!user) {
+      const existingEmail = await User.findOne({ where: { email: payload.email } });
+      if (existingEmail) {
+        return res.status(409).json({ message: 'This email belongs to another account. Contact the administrator.' });
+      }
       user = await User.create({
-        googleID,
-        name,
-        email,
-        avatarUrl,
-        role: demoRole === 'admin' ? 'admin' : 'customer'
+        googleID: payload.sub,
+        name: payload.name || payload.email,
+        email: payload.email,
+        avatarUrl: payload.picture,
+        role: 'customer'
       });
-    } else if (demoRole && user.role !== demoRole) {
-      user.role = demoRole;
-      await user.save();
     }
 
-    const token = jwt.sign(
-      { userID: user.userID, email: user.email, role: user.role, name: user.name },
-      JWT_SECRET,
-      { expiresIn: '7d' }
-    );
+    await new Promise((resolve, reject) => req.session.regenerate(error => error ? reject(error) : resolve()));
+    req.session.userID = user.userID;
+    req.session.googleID = user.googleID;
+    await new Promise((resolve, reject) => req.session.save(error => error ? reject(error) : resolve()));
 
     return res.status(200).json({
       message: 'Authentication successful',
-      token,
       user: {
         userID: user.userID,
         name: user.name,
@@ -65,8 +54,21 @@ const googleAuth = async (req, res) => {
     });
   } catch (error) {
     console.error('Google Auth Error:', error);
-    return res.status(500).json({ message: 'Authentication failed', error: error.message });
+    return res.status(500).json({ message: 'Unable to sign in. Please try again.' });
   }
+};
+
+const logout = (req, res) => {
+  req.session.destroy(error => {
+    if (error) return res.status(500).json({ message: 'Unable to sign out. Please try again.' });
+    res.clearCookie('booknest.sid', {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: process.env.NODE_ENV === 'production',
+      path: '/'
+    });
+    return res.status(204).end();
+  });
 };
 
 /**
@@ -140,6 +142,7 @@ const updateProfile = async (req, res) => {
 
 module.exports = {
   googleAuth,
+  logout,
   getProfile,
   updateProfile
 };

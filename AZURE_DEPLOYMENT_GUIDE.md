@@ -108,7 +108,9 @@ az webapp config appsettings set --resource-group rg-booknest-prod --name bookne
   DB_PASSWORD=YourStrongPassword123! \
   DB_PORT=3306 \
   DB_SSL=true \
-  JWT_SECRET=super_secure_production_jwt_secret_2026 \
+  SESSION_SECRET="$SESSION_SECRET" \
+  GOOGLE_CLIENT_ID="$GOOGLE_CLIENT_ID" \
+  APP_ORIGINS="https://booknest-app.azurewebsites.net" \
   AZURE_STORAGE_CONNECTION_STRING="$CONNECTION_STRING" \
   AZURE_STORAGE_CONTAINER_NAME="booknest-media" \
   AZURE_COMMUNICATION_CONNECTION_STRING="endpoint=https://booknest-email-service.unitedstates.communication.azure.com/;accesskey=your_key" \
@@ -116,6 +118,8 @@ az webapp config appsettings set --resource-group rg-booknest-prod --name bookne
 ```
 
 ---
+
+Set `SESSION_SECRET` to a securely generated random value of at least 32 characters; do not commit it. Build the frontend with `VITE_GOOGLE_CLIENT_ID` equal to `GOOGLE_CLIENT_ID`. Register the exact public HTTPS origin in Google Cloud and `APP_ORIGINS`. See [AUTHENTICATION.md](AUTHENTICATION.md) for setup and the trusted-proxy assumption.
 
 ## 3. Azure VM with OWASP ModSecurity WAF Setup
 

@@ -1,41 +1,26 @@
-const { sequelize, User, Category, Book, Review } = require('../models');
+const { sequelize, Category, Book } = require('../models');
 
 const seedDatabase = async () => {
   try {
     console.log('🔄 Syncing database tables...');
-    await sequelize.sync({ force: true });
+    await sequelize.sync();
     console.log('✅ Database tables synchronized.');
 
     // 1. Seed Categories
     console.log('🌱 Seeding Categories...');
-    const categories = await Category.bulkCreate([
+    const categoryData = [
       { name: 'Fiction & Literature', slug: 'fiction', description: 'Timeless classics, modern drama, and literary fiction', icon: 'BookOpen' },
       { name: 'Sci-Fi & Fantasy', slug: 'sci-fi-fantasy', description: 'Epic fantasy, space odysseys, and futuristic speculative fiction', icon: 'Sparkles' },
       { name: 'Technology & Computing', slug: 'technology', description: 'Software engineering, artificial intelligence, cloud architecture, and web development', icon: 'Cpu' },
       { name: 'Business & Leadership', slug: 'business', description: 'Entrepreneurship, economics, investing, and team leadership', icon: 'TrendingUp' },
       { name: 'Psychology & Self-Help', slug: 'psychology', description: 'Personal growth, cognitive psychology, habits, and mindfulness', icon: 'Brain' },
       { name: 'Academic & Science', slug: 'academic', description: 'Mathematics, physics, biology, research, and university textbooks', icon: 'GraduationCap' }
-    ]);
-
-    // 2. Seed Users
-    console.log('🌱 Seeding Users (Admin & Customers)...');
-    const adminUser = await User.create({
-      name: 'System Admin',
-      email: 'admin@booknest.com',
-      role: 'admin',
-      avatarUrl: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-      phone: '+1 (555) 019-2834',
-      address: '100 Azure Cloud Way, Suite 400, Seattle, WA 98101'
-    });
-
-    const customerUser = await User.create({
-      name: 'Eleanor Vance',
-      email: 'eleanor@example.com',
-      role: 'customer',
-      avatarUrl: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80',
-      phone: '+1 (555) 349-8821',
-      address: '742 Evergreen Terrace, Springfield, OR 97477'
-    });
+    ];
+    const categories = [];
+    for (const category of categoryData) {
+      const [record] = await Category.findOrCreate({ where: { slug: category.slug }, defaults: category });
+      categories.push(record);
+    }
 
     // 3. Seed Books
     console.log('🌱 Seeding Rich Book Collection...');
@@ -44,7 +29,7 @@ const seedDatabase = async () => {
       return acc;
     }, {});
 
-    const books = await Book.bulkCreate([
+    const books = [
       {
         title: 'Designing Data-Intensive Applications',
         author: 'Martin Kleppmann',
@@ -173,17 +158,10 @@ const seedDatabase = async () => {
         isAvailable: true,
         isFeatured: false
       }
-    ]);
-
-    // 4. Seed Initial Reviews
-    console.log('🌱 Seeding Reviews...');
-    await Review.create({
-      userID: customerUser.userID,
-      bookID: books[0].bookID,
-      rating: 5,
-      comment: 'An indispensable masterpiece for any engineer building scalable cloud systems!',
-      isApproved: true
-    });
+    ];
+    for (const book of books) {
+      await Book.findOrCreate({ where: { isbn: book.isbn }, defaults: book });
+    }
 
     console.log('🎉 Database seeding completed successfully!');
   } catch (error) {

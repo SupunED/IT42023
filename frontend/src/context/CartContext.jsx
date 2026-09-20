@@ -1,11 +1,14 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import api from '../services/api';
 import { useAuth } from './AuthContext';
 
 const CartContext = createContext(null);
 
 export const CartProvider = ({ children }) => {
-  const { isAuthenticated, token } = useAuth();
+  const { isAuthenticated, user, initializing } = useAuth();
+  const currentUserID = useRef(user?.userID);
+  currentUserID.current = user?.userID;
+  const pendingSync = useRef(null);
   const [cart, setCart] = useState(() => {
     const saved = localStorage.getItem('booknest_guest_cart');
     return saved ? JSON.parse(saved) : [];
@@ -15,23 +18,38 @@ export const CartProvider = ({ children }) => {
 
   // Sync / Fetch Cart when user logs in or changes
   useEffect(() => {
+    if (initializing) return;
+    let active = true;
+    setCart([]);
     if (isAuthenticated) {
       // Sync guest items if any exist
       const guestItems = JSON.parse(localStorage.getItem('booknest_guest_cart') || '[]');
       if (guestItems.length > 0) {
-        api.post('/cart/sync', { items: guestItems.map(i => ({ bookID: i.bookID, quantity: i.quantity })) })
+        if (!pendingSync.current || pendingSync.current.userID !== user.userID) {
+          pendingSync.current = {
+            userID: user.userID,
+            promise: api.post('/cart/sync', { items: guestItems.map(item => ({ bookID: item.bookID, quantity: item.quantity })) })
+          };
+        }
+        pendingSync.current.promise
           .then(() => {
             localStorage.removeItem('booknest_guest_cart');
-            fetchServerCart();
           })
-          .catch(fetchServerCart);
+          .catch(error => console.error('Cart sync failed:', error))
+          .finally(() => { if (active) fetchServerCart(); });
       } else {
         fetchServerCart();
       }
+    } else {
+      pendingSync.current = null;
+      setCart(JSON.parse(localStorage.getItem('booknest_guest_cart') || '[]'));
+      setLoading(false);
     }
-  }, [isAuthenticated, token]);
+    return () => { active = false; };
+  }, [isAuthenticated, user?.userID, initializing]);
 
   const fetchServerCart = async () => {
+    const requestedUserID = currentUserID.current;
     try {
       setLoading(true);
       const { data } = await api.get('/cart');
@@ -41,7 +59,7 @@ export const CartProvider = ({ children }) => {
         quantity: item.quantity,
         book: item.book
       }));
-      setCart(formatted);
+      if (requestedUserID === currentUserID.current) setCart(formatted);
     } catch (err) {
       console.error('Failed to fetch server cart:', err);
     } finally {

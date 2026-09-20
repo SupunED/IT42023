@@ -161,34 +161,42 @@ const checkout = async (req, res) => {
  */
 const trackOrder = async (req, res) => {
   try {
-    const { orderID, email } = req.query;
+    res.set('Cache-Control', 'no-store');
+    const { orderID, email } = (req.method === 'GET' ? req.query : req.body) || {};
 
-    if (!orderID) {
+    if (typeof orderID !== 'string' || !orderID.trim()) {
       return res.status(400).json({ message: 'Order ID is required for tracking' });
     }
 
     const whereClause = { orderID: orderID.trim() };
-    if (email) {
+    if (typeof email === 'string' && email.trim()) {
       whereClause.guestEmail = email.trim();
+    } else if (req.user) {
+      if (req.user.role !== 'admin') whereClause.userID = req.user.userID;
+    } else {
+      return res.status(400).json({ message: 'Order ID and checkout email are required for guest tracking.' });
     }
 
     const order = await Order.findOne({
       where: whereClause,
+      attributes: ['orderID', 'status', 'createdAt'],
       include: [
         {
           model: OrderItem,
           as: 'items',
+          attributes: ['itemID', 'quantity', 'totalPrice'],
           include: [{ model: Book, as: 'book', attributes: ['title', 'coverPhotoUrl', 'author', 'price'] }]
         },
         {
           model: Delivery,
-          as: 'delivery'
+          as: 'delivery',
+          attributes: ['trackingNumber', 'carrier', 'status', 'estimatedDeliveryDate', 'deliveredAt']
         }
       ]
     });
 
     if (!order) {
-      return res.status(404).json({ message: 'No order found with the provided Order ID.' });
+      return res.status(404).json({ message: 'No order found with the provided details.' });
     }
 
     return res.status(200).json({ order });

@@ -18,6 +18,7 @@ import OrderSuccessPage from './pages/customer/OrderSuccessPage';
 import OrderTrackingPage from './pages/tracking/OrderTrackingPage';
 import ProfilePage from './pages/profile/ProfilePage';
 import AdminDashboard from './pages/admin/AdminDashboard';
+import SignInPage from './pages/auth/SignInPage';
 
 function App() {
   return (
@@ -31,6 +32,7 @@ function App() {
             <main style={{ flex: 1 }}>
               <Routes>
                 <Route path="/" element={<HomePage />} />
+                <Route path="/sign-in" element={<SignInPage />} />
                 <Route path="/catalogue" element={<CataloguePage />} />
                 <Route path="/books/:id" element={<BookDetailPage />} />
                 <Route path="/checkout" element={<CheckoutPage />} />

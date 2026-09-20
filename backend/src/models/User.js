@@ -24,10 +24,6 @@ const User = sequelize.define('User', {
       isEmail: true
     }
   },
-  password: {
-    type: DataTypes.STRING,
-    allowNull: true // Nullable when authenticated via Google OAuth
-  },
   avatarUrl: {
     type: DataTypes.STRING,
     allowNull: true

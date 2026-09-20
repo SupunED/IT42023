@@ -15,99 +15,24 @@ import { useAuth } from '../../context/AuthContext';
 import { useCart } from '../../context/CartContext';
 
 const Navbar = () => {
-  const { user, isAuthenticated, isAdmin, quickDemoLogin, logout } = useAuth();
+  const { user, isAuthenticated, isAdmin, initializing, logout } = useAuth();
   const { cartCount, setIsCartOpen } = useCart();
   const [searchQuery, setSearchQuery] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
-  const [showDemoMenu, setShowDemoMenu] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
-
-  const handleSearchSubmit = (e) => {
-    e.preventDefault();
+  const handleSearchSubmit = (event) => {
+    event.preventDefault();
     if (searchQuery.trim()) {
       navigate(`/catalogue?q=${encodeURIComponent(searchQuery.trim())}`);
     }
   };
 
-  const handleRoleSelect = async (role) => {
-    setShowDemoMenu(false);
-    await quickDemoLogin(role);
-  };
-
   return (
     <header style={{ position: 'sticky', top: 0, zIndex: 1000, background: '#ffffff', borderBottom: '1px solid var(--border)', boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)' }}>
-      {/* Minimal Evaluator Role Switcher */}
-      <div style={{ background: 'var(--primary-light)', color: 'var(--text-muted)', padding: '5px 0', fontSize: '12px', borderBottom: '1px solid var(--border)' }}>
-        <div className="container flex items-center justify-end">
-          <div className="flex items-center gap-2" style={{ position: 'relative' }}>
-            <button
-              onClick={() => setShowDemoMenu(!showDemoMenu)}
-              style={{
-                background: 'transparent',
-                border: '1px solid var(--border)',
-                color: 'var(--text-main)',
-                padding: '3px 10px',
-                borderRadius: '6px',
-                fontSize: '11px',
-                fontWeight: 500,
-                cursor: 'pointer',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 4
-              }}
-            >
-              {isAuthenticated ? `${user?.role?.toUpperCase()} (${user?.name?.split(' ')[0]})` : 'Guest Mode'}
-              <ChevronDown size={12} />
-            </button>
-
-            {showDemoMenu && (
-              <div
-                style={{
-                  position: 'absolute',
-                  top: '100%',
-                  right: 0,
-                  marginTop: 6,
-                  background: '#ffffff',
-                  color: 'var(--text-main)',
-                  borderRadius: '8px',
-                  boxShadow: 'var(--shadow-lg)',
-                  border: '1px solid var(--border)',
-                  padding: '8px',
-                  width: '200px',
-                  zIndex: 10001
-                }}
-              >
-                <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-muted)', padding: '4px 8px' }}>SWITCH TEST ROLE</div>
-                <button
-                  onClick={() => handleRoleSelect('customer')}
-                  style={{ width: '100%', textAlign: 'left', padding: '8px', borderRadius: '6px', border: 'none', background: user?.role === 'customer' ? 'var(--accent-light)' : 'transparent', cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <UserIcon size={14} /> Customer (Eleanor)
-                </button>
-                <button
-                  onClick={() => handleRoleSelect('admin')}
-                  style={{ width: '100%', textAlign: 'left', padding: '8px', borderRadius: '6px', border: 'none', background: user?.role === 'admin' ? 'var(--primary-light)' : 'transparent', cursor: 'pointer', fontSize: '13px', fontWeight: 500, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 8 }}
-                >
-                  <ShieldAlert size={14} /> Admin Portal
-                </button>
-                {isAuthenticated && (
-                  <button
-                    onClick={() => { logout(); setShowDemoMenu(false); }}
-                    style={{ width: '100%', textAlign: 'left', padding: '8px', borderRadius: '6px', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '13px', color: 'var(--danger)', display: 'flex', alignItems: 'center', gap: 8 }}
-                  >
-                    <LogOut size={14} /> Log Out (Guest)
-                  </button>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Main Navbar */}
       <div className="container" style={{ padding: '14px 24px' }}>
-        <div className="flex items-center justify-between gap-6">
+        <div className="flex items-center justify-between gap-6" style={{ flexWrap: 'wrap' }}>
           {/* Brand Logo */}
           <Link to="/" className="flex items-center gap-3">
             <div style={{ width: '40px', height: '40px', borderRadius: '8px', background: 'var(--primary)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#ffffff' }}>
@@ -124,7 +49,7 @@ const Navbar = () => {
           </Link>
 
           {/* Search Bar */}
-          <form onSubmit={handleSearchSubmit} style={{ flex: 1, maxWidth: '480px', position: 'relative' }}>
+          <form onSubmit={handleSearchSubmit} style={{ flex: '1 1 240px', maxWidth: '480px', position: 'relative' }}>
             <input
               type="text"
               placeholder="Search by title, author, category, or keyword..."
@@ -144,7 +69,7 @@ const Navbar = () => {
           </form>
 
           {/* Nav Links & Actions */}
-          <div className="flex items-center" style={{ gap: '20px' }}>
+          <div className="flex items-center" style={{ gap: '12px', flexWrap: 'wrap' }}>
             <nav className="flex items-center" style={{ gap: '4px' }}>
               <Link
                 to="/catalogue"
@@ -250,11 +175,11 @@ const Navbar = () => {
                     padding: '4px'
                   }}
                 >
-                  <img
-                    src={user?.avatarUrl || 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=150&auto=format&fit=crop&q=80'}
+                  {user?.avatarUrl ? <img
+                    src={user.avatarUrl}
                     alt={user?.name}
                     style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border)' }}
-                  />
+                  /> : <UserIcon size={28} aria-label={user?.name} />}
                   <ChevronDown size={14} style={{ color: 'var(--text-muted)' }} />
                 </button>
 
@@ -276,7 +201,7 @@ const Navbar = () => {
                   >
                     <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-light)' }}>
                       <p style={{ fontSize: '14px', fontWeight: 600, margin: 0, color: 'var(--text-main)' }}>{user?.name}</p>
-                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>{user?.email}</p>
+                      <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0, overflowWrap: 'anywhere' }}>{user?.email}</p>
                       <span className={`badge ${isAdmin ? 'badge-accent' : 'badge-primary'}`} style={{ marginTop: 6 }}>
                         {isAdmin ? 'Library Admin' : 'BookNest Member'}
                       </span>
@@ -320,7 +245,13 @@ const Navbar = () => {
 
                     <div style={{ borderTop: '1px solid var(--border-light)', paddingTop: '6px' }}>
                       <button
-                        onClick={() => { logout(); setShowUserMenu(false); }}
+                        onClick={async () => {
+                          const result = await logout();
+                          if (result.success) {
+                            setShowUserMenu(false);
+                            navigate('/');
+                          }
+                        }}
                         style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', fontSize: '13px', color: 'var(--danger)', border: 'none', background: 'transparent', width: '100%', cursor: 'pointer' }}
                       >
                         <LogOut size={15} /> Sign Out
@@ -331,7 +262,8 @@ const Navbar = () => {
               </div>
             ) : (
               <button
-                onClick={() => quickDemoLogin('customer')}
+                onClick={() => navigate('/sign-in', { state: { from: location } })}
+                disabled={initializing}
                 className="btn btn-outline btn-sm"
                 style={{ gap: 6 }}
               >

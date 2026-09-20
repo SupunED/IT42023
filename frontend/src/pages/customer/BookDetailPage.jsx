@@ -25,7 +25,7 @@ const BookDetailPage = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const { addToCart } = useCart();
-  const { user, isAuthenticated, quickDemoLogin } = useAuth();
+  const { user, isAuthenticated, initializing } = useAuth();
 
   const [book, setBook] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -71,9 +71,10 @@ const BookDetailPage = () => {
 
   const handleLendingSubmit = async (e) => {
     e.preventDefault();
+    if (initializing) return;
     if (!isAuthenticated) {
-      // Auto log in as demo customer if guest for frictionless CA testing
-      await quickDemoLogin('customer');
+      navigate('/sign-in', { state: { from: { pathname: `/books/${id}`, search: '?mode=lend' } } });
+      return;
     }
 
     setLendingSubmitting(true);
@@ -96,8 +97,10 @@ const BookDetailPage = () => {
 
   const handleReviewSubmit = async (e) => {
     e.preventDefault();
+    if (initializing) return;
     if (!isAuthenticated) {
-      await quickDemoLogin('customer');
+      navigate('/sign-in', { state: { from: { pathname: `/books/${id}` } } });
+      return;
     }
 
     if (!newComment.trim()) return;

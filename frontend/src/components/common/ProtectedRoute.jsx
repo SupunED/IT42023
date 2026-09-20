@@ -3,15 +3,15 @@ import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 
 const ProtectedRoute = ({ children, requireAdmin = false }) => {
-  const { isAuthenticated, isAdmin, loading } = useAuth();
+  const { isAuthenticated, isAdmin, initializing } = useAuth();
   const location = useLocation();
 
-  if (loading) {
+  if (initializing) {
     return <div style={{ padding: '80px', textAlign: 'center' }}>Verifying permissions...</div>;
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" state={{ from: location }} replace />;
+    return <Navigate to="/sign-in" state={{ from: location }} replace />;
   }
 
   if (requireAdmin && !isAdmin) {
