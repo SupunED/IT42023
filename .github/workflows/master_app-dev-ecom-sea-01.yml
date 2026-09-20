@@ -1,13 +1,10 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Build and deploy Node.js app to Azure Web App - app-dev-ecom-sea-01
+name: Legacy BookNest deployment (manual only)
 env:
-  VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID }}
+  VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
 on:
-  push:
-    branches:
-      - master
   workflow_dispatch:
 
 jobs:
@@ -23,6 +20,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '20.x'
+
+      - name: Validate Google sign-in build configuration
+        run: |
+          node -e "if (!process.env.VITE_GOOGLE_CLIENT_ID?.trim()) { console.error('Missing VITE_GOOGLE_CLIENT_ID. Set it under repository Settings > Secrets and variables > Actions before building. Azure runtime settings are not available to this build.'); process.exit(1); }"
 
       - name: Install dependencies and build frontend
         run: |
@@ -58,7 +59,7 @@ jobs:
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
-          app-name: 'app-dev-ecom-sea-01'
+          app-name: 'booknest'
           slot-name: 'Production'
           package: .
           publish-profile: ${{ secrets.AZUREAPPSERVICE_PUBLISHPROFILE_2678BF1EAEC24D25ACB53D3448E13AE8 }}
