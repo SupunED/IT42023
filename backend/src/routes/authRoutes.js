@@ -16,6 +16,9 @@ router.post('/google', rateLimit({
 	message: { message: 'Too many sign-in attempts. Please try again later.' }
 }), googleAuth);
 router.post('/logout', logout);
+router.get('/client-id', (req, res) => {
+	res.json({ clientId: process.env.GOOGLE_CLIENT_ID || '' });
+});
 router.get('/profile', authenticate, getProfile);
 router.put('/profile', authenticate, updateProfile);
 

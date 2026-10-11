@@ -3,6 +3,9 @@
 
 name: Build and deploy Node.js app to Azure Web App - app-dev-ecom-sea-01
 
+env:
+  VITE_GOOGLE_CLIENT_ID: ${{ vars.VITE_GOOGLE_CLIENT_ID || secrets.VITE_GOOGLE_CLIENT_ID }}
+
 on:
   push:
     branches:
@@ -22,6 +25,10 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: '22.x'
+
+      - name: Validate Google sign-in build configuration
+        run: |
+          node -e "if (!process.env.VITE_GOOGLE_CLIENT_ID?.trim()) { console.error('Missing VITE_GOOGLE_CLIENT_ID. Set it under repository Settings > Secrets and variables > Actions before building. Azure runtime settings are not available to this build.'); process.exit(1); }"
 
       - name: npm install, build, and test
         run: |
