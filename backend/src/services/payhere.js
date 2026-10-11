@@ -57,12 +57,37 @@ const createPayment = (order, contact, config = getConfig()) => {
 
 const verifyNotification = (body, config = getConfig()) => {
   const required = ['merchant_id', 'order_id', 'payment_id', 'payhere_amount', 'payhere_currency', 'status_code', 'md5sig'];
-  if (!body || required.some(field => typeof body[field] !== 'string' || !body[field] || body[field].length > 200)) return false;
-  if (body.merchant_id !== config.merchantID || body.payhere_currency !== CURRENCY) return false;
-  if (!/^\d+\.\d{2}$/.test(body.payhere_amount) || !['2', '0', '-1', '-2', '-3'].includes(body.status_code)) return false;
-  if (!/^[A-Fa-f0-9]{32}$/.test(body.md5sig)) return false;
+  if (!body) {
+    console.error('❌ [PayHere IPN] Empty notification payload');
+    return false;
+  }
+  const missing = required.filter(field => typeof body[field] !== 'string' || !body[field] || body[field].length > 200);
+  if (missing.length > 0) {
+    console.error('❌ [PayHere IPN] Missing or invalid fields:', missing);
+    return false;
+  }
+  if (body.merchant_id !== config.merchantID) {
+    console.error(`❌ [PayHere IPN] Merchant ID mismatch: received "${body.merchant_id}", expected "${config.merchantID}"`);
+    return false;
+  }
+  if (body.payhere_currency !== CURRENCY) {
+    console.error(`❌ [PayHere IPN] Currency mismatch: received "${body.payhere_currency}", expected "${CURRENCY}"`);
+    return false;
+  }
+  if (!/^\d+\.\d{2}$/.test(body.payhere_amount) || !['2', '0', '-1', '-2', '-3'].includes(body.status_code)) {
+    console.error(`❌ [PayHere IPN] Invalid amount (${body.payhere_amount}) or status_code (${body.status_code})`);
+    return false;
+  }
+  if (!/^[A-Fa-f0-9]{32}$/.test(body.md5sig)) {
+    console.error('❌ [PayHere IPN] Invalid md5sig format');
+    return false;
+  }
   const signature = md5(body.merchant_id + body.order_id + body.payhere_amount + body.payhere_currency + body.status_code + md5(config.secret));
-  return secureEqual(body.md5sig.toUpperCase(), signature);
+  const valid = secureEqual(body.md5sig.toUpperCase(), signature);
+  if (!valid) {
+    console.error('❌ [PayHere IPN] Signature mismatch! Check that PAYHERE_MERCHANT_SECRET matches the domain secret in PayHere.');
+  }
+  return valid;
 };
 
 module.exports = { PAYMENT_METHOD, CURRENCY, RESERVATION_MS, getConfig, createPayment, verifyNotification, statusToken, verifyStatusToken };

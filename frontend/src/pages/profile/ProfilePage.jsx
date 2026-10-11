@@ -10,7 +10,8 @@ import {
   Save,
   Calendar,
   ExternalLink,
-  BookOpen
+  BookOpen,
+  Truck
 } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../services/api';
@@ -256,10 +257,11 @@ const ProfilePage = () => {
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <span className="badge badge-primary">Status: {ord.status}</span>
-                      <strong style={{ fontSize: '16px', color: '#0f172a' }}>${Number(ord.totalAmount).toFixed(2)}</strong>
+                      <span className={`badge ${ord.status === 'Delivered' ? 'badge-success' : ord.status === 'Cancelled' ? 'badge-danger' : 'badge-primary'}`}>{ord.status}</span>
+                      {ord.delivery && <span className="badge badge-success" style={{ fontSize: '11px' }}><Truck size={12} /> {ord.delivery.status}</span>}
+                      <strong style={{ fontSize: '16px', color: '#0f172a' }}>${Number(ord.total).toFixed(2)}</strong>
                       <Link to={`/tracking?orderID=${ord.orderID}`} className="btn btn-outline btn-sm">
-                        <ExternalLink size={14} /> Track Delivery
+                        <ExternalLink size={14} /> Track
                       </Link>
                     </div>
                   </div>
@@ -276,8 +278,9 @@ const ProfilePage = () => {
                         />
                         <div style={{ flex: 1 }}>
                           <span style={{ fontSize: '13px', fontWeight: 600 }}>{item.book?.title}</span>
-                          <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Qty: {item.quantity} × ${Number(item.price).toFixed(2)}</span>
+                          <span style={{ fontSize: '12px', color: '#64748b', display: 'block' }}>Qty: {item.quantity} × ${Number(item.unitPrice).toFixed(2)}</span>
                         </div>
+                        <span style={{ fontSize: '13px', fontWeight: 700 }}>${Number(item.totalPrice).toFixed(2)}</span>
                       </div>
                     ))}
                   </div>

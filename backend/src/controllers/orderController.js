@@ -132,16 +132,19 @@ const getUserOrders = async (req, res) => {
   try {
     const userID = req.user.userID;
     const orders = await Order.findAll({
-      where: { userID },
+      where: { userID, paymentStatus: 'paid' },
+      attributes: ['orderID', 'subtotal', 'shippingFee', 'total', 'paymentStatus', 'status', 'createdAt'],
       include: [
         {
           model: OrderItem,
           as: 'items',
-          include: [{ model: Book, as: 'book', attributes: ['bookID', 'title', 'coverPhotoUrl', 'author'] }]
+          attributes: ['itemID', 'quantity', 'unitPrice', 'totalPrice'],
+          include: [{ model: Book, as: 'book', attributes: ['bookID', 'title', 'coverPhotoUrl', 'author', 'price'] }]
         },
         {
           model: Delivery,
-          as: 'delivery'
+          as: 'delivery',
+          attributes: ['trackingNumber', 'carrier', 'status', 'estimatedDeliveryDate', 'deliveredAt']
         }
       ],
       order: [['createdAt', 'DESC']]
