@@ -8,7 +8,7 @@ const dotenv = require('dotenv');
 dotenv.config();
 
 const { sequelize } = require('./models');
-const { sessionMiddleware, sessionStore, allowedOrigins, requireTrustedOrigin } = require('./config/session');
+const { sessionMiddleware, sessionStore, allowedOrigins, requireTrustedOrigin, isAllowedOrigin } = require('./config/session');
 const { initCronJobs } = require('./services/scheduler');
 
 // Routes
@@ -30,9 +30,9 @@ app.use(helmet({
   referrerPolicy: { policy: 'strict-origin-when-cross-origin' },
   contentSecurityPolicy: {
     directives: {
-      scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client', 'https://www.payhere.lk'],
+      scriptSrc: ["'self'", 'https://accounts.google.com/gsi/client', 'https://www.payhere.lk', 'https://sandbox.payhere.lk', 'https://static.cloudflareinsights.com'],
       frameSrc: ["'self'", 'https://accounts.google.com', 'https://www.payhere.lk', 'https://sandbox.payhere.lk'],
-      connectSrc: ["'self'", 'https://accounts.google.com', 'https://www.payhere.lk', 'https://sandbox.payhere.lk'],
+      connectSrc: ["'self'", 'https://accounts.google.com', 'https://www.payhere.lk', 'https://sandbox.payhere.lk', 'https://cloudflareinsights.com'],
       imgSrc: ["'self'", 'data:', 'https:'],
       styleSrc: ["'self'", "'unsafe-inline'", 'https:']
     }
@@ -40,7 +40,7 @@ app.use(helmet({
   crossOriginResourcePolicy: false // Allow loading local /uploads assets
 }));
 app.use(cors({
-  origin: (origin, callback) => callback(null, !origin || allowedOrigins.has(origin)),
+  origin: (origin, callback) => callback(null, !origin || isAllowedOrigin(origin)),
   credentials: true
 }));
 app.post('/api/payments/payhere/notify', express.urlencoded({ extended: false, limit: '16kb' }), notify);

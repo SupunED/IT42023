@@ -27,12 +27,28 @@ const sessionMiddleware = session({
   }
 });
 
+const isAllowedOrigin = (origin, req) => {
+  if (!origin) return false;
+  if (allowedOrigins.has(origin)) return true;
+  if (req) {
+    const host = req.get('x-forwarded-host') || req.get('host');
+    if (host) {
+      const proto = req.get('x-forwarded-proto') || req.protocol || 'https';
+      if (origin === `${proto}://${host}` || origin === `https://${host}` || origin === `http://${host}`) {
+        return true;
+      }
+    }
+  }
+  return false;
+};
+
 const requireTrustedOrigin = (req, res, next) => {
   if (['GET', 'HEAD', 'OPTIONS'].includes(req.method)) return next();
-  if (!allowedOrigins.has(req.get('origin'))) {
+  const origin = req.get('origin');
+  if (!isAllowedOrigin(origin, req)) {
     return res.status(403).json({ message: 'Request origin is not allowed.' });
   }
   next();
 };
 
-module.exports = { sessionMiddleware, sessionStore, allowedOrigins, requireTrustedOrigin };
+module.exports = { sessionMiddleware, sessionStore, allowedOrigins, requireTrustedOrigin, isAllowedOrigin };
